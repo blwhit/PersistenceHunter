@@ -1,7 +1,5 @@
 # PersistenceHunter.ps1
-
-**PowerShell CLI tool for hunting Windows malware persistence mechanisms and suspicious autoruns.**
-
+---
 ### Overview
 This tool automatically finds potential malware footholds by analyzing the Registry, Services, Scheduled Tasks, and Startup Items for:
 
@@ -21,7 +19,7 @@ PeristenceHunter.ps1 can also be used to enumerate all autoruns for manual revie
 
 ---
 
-### Function Syntax:
+## Function Syntax:
 ```powershell
 Hunt-Persistence -mode "Mode" -strings @("exampleString1", "exampleString2", "exampleString3") -csv "C:\FilePath.csv"
 ```
