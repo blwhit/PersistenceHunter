@@ -328,7 +328,7 @@ function Output-Report {
     )
     
     # Check if report has any objects
-    if (-not $report -or $report.Count -eq 0) {
+    if (-not $report -or $report.Count -eq 0 -or $report -eq $null -or $report -eq "") {
         Write-Host "`nNo persistence mechanisms were found." -ForegroundColor Yellow
         return
     }
