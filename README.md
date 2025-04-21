@@ -1,45 +1,19 @@
 # PersistenceHunter.ps1
 
-**CLI tool for hunting malware persistence and footholds through Windows PowerShell.**
+**PowerShell CLI tool for hunting Windows malware persistence mechanisms and suspicious autoruns.**
 
 ### Overview
-PersistenceHunter is a PowerShell script designed to hunt for malware persistence mechanisms and investigate suspicious autoruns. 
+This tool automatically finds potential malware footholds by analyzing the Registry, Services, Scheduled Tasks, and Startup Items for:
 
-The tool automatically flags and finds potential malware footholds by analyzing the following:
+- Autoruns with invalid signatures
+- Suspicious file paths or references
+- Suspicious execution arguments
+- Embedded IPs/domains in arguments
+- Startup folder path changes via Registry
+- Bootstart key manipulation via Registry
+- Suspicious shortcut targets in the Startup Folder
 
-#### **Registry:**
-- All autoruns that have one of the following:
-  - Invalid signature
-  - Suspicious file path strings
-  - Suspicious argument strings
-  - IP or domain names in arguments
-
-- Additional checks for:
-  - Startup folder location changes via registry key
-  - Bootstart key manipulation
-
-#### **Services:**
-- Auto-start or currently running services that have one of the following:
-  - Invalid signature
-  - Suspicious file path strings
-  - Suspicious argument strings
-  - IP or domain names in arguments
-
-#### **Tasks:**
-- Enabled or running tasks that have one of the following:
-  - Invalid signature
-  - Suspicious file path strings
-  - Suspicious argument strings
-  - IP or domain names in argument strings
-
-#### **Startup Items:**
-- Items in a Startup Folder that have one of the following:
-  - Invalid signature
-  - Suspicious file path strings
-  - Suspicious file type
-  - Suspicious shortcut target
-
-Additionally, PeristenceHunter.ps1 can be used to enumerate all autoruns manually without filtering/flagging.
+PeristenceHunter.ps1 can also be used to enumerate all autoruns for manual review without automatic filtering/flagging.
 
 ### Built from sources:
 - [T1547: Boot or Logon Autostart Execution](https://attack.mitre.org/techniques/T1547/001/)
