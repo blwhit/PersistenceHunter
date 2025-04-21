@@ -458,7 +458,7 @@ function Resolve-RegExecutePath {
         $exePath = $matches[2]
 
         # Ensure it points to a real file, not a directory
-        if (Test-Path $exePath -PathType Leaf) {
+        if (Test-Path $exePath -PathType Leaf -ErrorAction SilentlyContinue) {
             return $exePath
         }
     }
@@ -473,7 +473,7 @@ function Resolve-RegExecutePath {
 function Get-SignatureStatus {
     param($filePath)
 
-    if (Test-Path $filePath) {
+    if (Test-Path $filePath -ErrorAction SilentlyContinue) {
         try {
             return (Get-AuthenticodeSignature $filePath).Status
         } catch {
@@ -488,7 +488,7 @@ function Get-SignatureStatus {
 function Get-MD5Hash {
     param($filePath)
 
-    if (Test-Path $filePath) {
+    if (Test-Path $filePath -ErrorAction SilentlyContinue) {
         try {
             return (Get-FileHash -Path $filePath -Algorithm MD5).Hash
         } catch {
@@ -546,7 +546,7 @@ function Get-RegistryValueData {
             $fileSignature = ""
             $fileMD5 = ""
 
-            if ($exePath -and (Test-Path $exePath -PathType Leaf)) {
+            if ($exePath -and (Test-Path $exePath -PathType Leaf -ErrorAction SilentlyContinue)) {
                 $fileSignature = Get-SignatureStatus -filePath $exePath
                 $fileMD5 = Get-MD5Hash -filePath $exePath
             }
@@ -567,7 +567,7 @@ function Get-RegistryValueData {
                 Path          = $Path
                 User          = $user
                 KeyName       = $prop.Name
-                KeyValue      = $prop.Value
+                KeyValue = if ($prop.Value -is [System.Array]) { $prop.Value -join " " } else { $prop.Value }
                 ExecuteFile   = $exePath
                 FileSignature = $fileSignature
                 MD5           = $fileMD5
@@ -598,7 +598,6 @@ function Get-RegistryValueData {
 
 
 ################################################################################################################################################################################################################
-
 # REGISTRY #
 
 function Get-Registry {
@@ -608,6 +607,7 @@ function Get-Registry {
         [string]
         $mode
     )
+
     # List of registry paths to enumerate, including for ALL users (if we have admin perms)
     $RegistryPaths = @(
         # Startup-related
@@ -619,34 +619,31 @@ function Get-Registry {
         "HKLM:\Software\Microsoft\Windows\CurrentVersion\RunServicesOnce",
         "HKCU:\Software\Microsoft\Windows\CurrentVersion\RunServices",
         "HKCU:\Software\Microsoft\Windows\CurrentVersion\RunServicesOnce",
-        
+
         # Explorer Shell Folders
-        # 1 - 'Startup'
-        # 2 - 'Common Startup'
         "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders",
         "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders",
         "HKLM:\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders",
         "HKLM:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders",
-        
+
         # Policies-based autostarts
         "HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run",
         "HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run",
 
-        # Add check for BootExecute manipulation here
+        # BootExecute manipulation
         "HKLM:\System\CurrentControlSet\Control\Session Manager"
     )
 
-    # User custom function to enumerate registry paths, attempt to look for all user hives
+    # Initialize registry object array
+    $regObjects = @()
+
     foreach ($Path in $RegistryPaths) {
         if ($Path -like "HKCU:*") {
-            # First get current user and add object to output report
             $regObjects += Get-RegistryValueData -Path $Path
 
-            # Convert HKCU path to subpath
             $relativeSubPath = $Path -replace "HKCU:", ""
 
-            # Enumerate all SIDs under HKU using full Registry provider, add to list of keys to query
-            $userSIDs = Get-ChildItem -Path "Registry::HKEY_USERS\" -ErrorAction SilentlyContinue | Where-Object {  
+            $userSIDs = Get-ChildItem -Path "Registry::HKEY_USERS\" -ErrorAction SilentlyContinue | Where-Object {
                 $_.Name -match "S-1-5-21" -and $_.Name -notmatch "_Classes$"
             }
 
@@ -654,19 +651,17 @@ function Get-Registry {
                 $userPath = "Registry::HKEY_USERS\$($sid.PSChildName)$relativeSubPath"
                 $regObjects += Get-RegistryValueData -Path $userPath
             }
-        }
-        else {
+        } else {
             $regObjects += Get-RegistryValueData -Path $Path
         }
     }
-    
-    if ($mode -like "filter") {
+
+    if ($mode -eq "filter") {
         $regObjectsFiltered = @()
 
         foreach ($reg in $regObjects) {
             $matchDetails = @()
 
-            # Special static check for startup folder manipulation
             if ($reg.KeyName -eq "Common Startup" -and $reg.KeyValue -notlike "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup") {
                 $matchDetails += "Startup Folder Path Manipulation"
             }
@@ -674,72 +669,77 @@ function Get-Registry {
                 $matchDetails += "Startup Folder Path Manipulation"
             }
 
-            # Signature check
             if ($reg.FileSignature -ne "Valid" -and -not [string]::IsNullOrWhiteSpace($reg.ExecuteFile)) {
                 $matchDetails += "Signature Invalid"
             }
 
-            # Suspicious path check
             $suspiciousPathMatches = Check-Suspicious-Strings -string $reg.ExecuteFile -list $global:susFilepathStrings
             if ($suspiciousPathMatches.Count -gt 0) {
                 $matchDetails += "Suspicious Path Match: $($suspiciousPathMatches -join ', ')"
             }
 
-            # Suspicious arguments check
             $suspiciousArgMatches = Check-Suspicious-Strings -string $reg.ExecuteArgs -list $global:suspiciousArgStrings
             if ($suspiciousArgMatches.Count -gt 0) {
                 $matchDetails += "Suspicious Args Match: $($suspiciousArgMatches -join ', ')"
             }
 
-            # IP matches in arguments
             $ipMatches = Check-IP -string $reg.ExecuteArgs
             if ($ipMatches.Count -gt 0) {
                 $matchDetails += "Matched IP Address: $($ipMatches -join ', ')"
             }
 
-            # Domain matches in arguments (use Check-TLD)
             $domainMatch = Check-TLD -string $reg.ExecuteArgs
             if ($null -ne $domainMatch) {
                 $matchDetails += "Matched Domain: $domainMatch"
             }
 
-            # Check for BootExecute manipulation
             if ($reg.Path -eq "HKLM:\System\CurrentControlSet\Control\Session Manager" -and $reg.KeyName -eq "BootExecute") {
                 if ($reg.KeyValue -notlike "autocheck autochk *") {
                     $matchDetails += "Malicious BootExecute Modification"
                 }
             }
 
-            # Final filter
             if ($matchDetails.Count -gt 0) {
                 $filteredReg = $reg.PSObject.Copy()
                 $filteredReg.Flags = ($matchDetails -join "; ")
-                $regObjectsFiltered += $filteredReg
+                $regObjectsFiltered += $filteredReg}
+
+            # Filter False Positives
+            $regObjectsFiltered = $regObjectsFiltered | Where-Object{
+                !(
+                    ($_.Path -like "*\Software\Microsoft\Windows\CurrentVersion\Run" -and $_.KeyValue -like "*\AppData\Local\Microsoft\OneDrive\OneDrive.exe*" -and $_.ExecuteFile -like "*\AppData\Local\Microsoft\OneDrive\OneDrive.exe")
+                )
+            }
+        }
+        return $regObjectsFiltered
+    }
+    else {
+        # Return all, but only include Shell Folder startup paths if relevant, and only include Session Manager key if relevant
+        $filteredRegObjects = @()
+
+        $startupPaths = @(
+            "*Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders",
+            "*Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders",
+            "System\CurrentControlSet\Control\Session Manager"
+        )
+
+        foreach ($reg in $regObjects) {
+            $isStartupPath = $startupPaths | Where-Object { $reg.Path -like $_ }
+            if ($isStartupPath -and ($reg.KeyName -eq "Common Startup" -or $reg.KeyName -eq "Startup")) {
+                $filteredRegObjects += $reg
+            }
+            elseif($reg.Path -eq "HKLM:\System\CurrentControlSet\Control\Session Manager" -and $reg.KeyName -eq "BootExecute"){
+                $filteredRegObjects += $reg
+            }
+            elseif (-not $isStartupPath -and $reg.Path -ne "HKLM:\System\CurrentControlSet\Control\Session Manager") {
+                $filteredRegObjects += $reg
             }
         }
 
-        return $regObjectsFiltered
+        return $filteredRegObjects
     }
-
-    # Assume $regObjects is your starting list of registry objects
-    $filteredRegObjects = @()
-
-    foreach ($reg in $regObjects) {
-        # Check if the path matches and the key names relate to startup
-        if (($reg.Path -like "*Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -or 
-            $reg.Path -like "*Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders") -and 
-            ($reg.KeyName -eq "Common Startup" -or 
-            $reg.KeyName -eq "Startup")) {
-            $filteredRegObjects += $reg
-        }
-        if($reg.Path -notlike "*Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -and $reg.Path -notlike "*Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders"){
-            $filteredRegObjects += $reg
-        }
-    }
-
-    # Return the filtered list
-    return $filteredRegObjects
 }
+
 
 
 
@@ -888,7 +888,9 @@ function Get-Tasks {
                 ($_.Name -like "UninstallSMB1*" -and $_.Path -like "\Microsoft\Windows\SMB\" -and $_.Flags -like "Suspicious Args Match: hidden, -nop, -NoProfile, -WindowStyle Hidden, -NonI, -NonInteractive" -and $_.Execute -like "*%windir%\system32\WindowsPowerShell\v1.0\powershell.exe*") -or
                 ($_.Name -like "GatherNetworkInfo" -and $_.Execute -like "%windir%\system32\gatherNetworkInfo.vbs" -and $_.Path -like "\Microsoft\Windows\NetTrace\") -or
                 ($_.Name -eq "ScheduledDefrag" -and $_.Path -like "\Microsoft\Windows\Defrag\" -and $_.Arguments -like "*-C*") -or
-                ($_.Name -match "OneDrive.*(Reporting Task|Standalone Update Task|Startup Task)" -and $_.Path -eq "\" -and (($_.ExecutePath -like "C:\Users\*\AppData\Local\Microsoft\OneDrive\OneDriveStandaloneUpdater.exe" -and ($_.Arguments -eq "/reporting" -or -not $_.Arguments)) -or ($_.ExecutePath -like "C:\Users\*\AppData\Local\Microsoft\OneDrive\*\OneDriveLauncher.exe" -and $_.Arguments -eq "/startInstances")))
+                ($_.Name -match "OneDrive.*(Reporting Task|Standalone Update Task|Startup Task)" -and $_.Path -eq "\" -and (($_.ExecutePath -like "C:\Users\*\AppData\Local\Microsoft\OneDrive\OneDriveStandaloneUpdater.exe" -and ($_.Arguments -eq "/reporting" -or -not $_.Arguments)) -or ($_.ExecutePath -like "C:\Users\*\AppData\Local\Microsoft\OneDrive\*\OneDriveLauncher.exe" -and $_.Arguments -eq "/startInstances"))) -or
+                ($_.ExecutePath -like "*\Tools\internet_detector\internet_detector.exe" -and $_.Name -like "Internet Detector" -and $_.ExecuteMD5 -like "2F429D32D213ACAD6BB90C05B4345276") -or
+                ($_.ExecutePath -like "*\Program Files\Npcap\CheckStatus.bat" -and $_.Name -like "npcapwatchdog" -and $_.ExecuteMD5 -like "CA8A429838083C351839C258679BC264")
             )
         }   
         return $tasksFiltered
@@ -896,6 +898,7 @@ function Get-Tasks {
         return $taskObjects
     }
 }
+
 
 
 
@@ -986,7 +989,7 @@ function Get-Startups{
 
     # Also check the All Users startup folder
     $allUsersStartup = "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Startup"
-    if (Test-Path $allUsersStartup) {
+    if (Test-Path $allUsersStartup -ErrorAction SilentlyContinue) {
         $files = Get-ChildItem -Path $allUsersStartup -File -Force -ErrorAction SilentlyContinue
         foreach ($file in $files) {
             $itemType = switch ($file.Extension.ToLower()) {
@@ -1209,7 +1212,8 @@ function Get-Services {
         # Filter Out False Positives
         $serviceReportFiltered = $serviceReportFiltered | Where-Object {
             !(
-                ($_.Signature -eq "Valid" -and $_.ExecuteFile -like "C:\ProgramData\Microsoft\Windows Defender\Platform*")
+                ($_.Signature -eq "Valid" -and $_.ExecuteFile -like "C:\ProgramData\Microsoft\Windows Defender\Platform*") -or
+                ($_.ExecuteFile -like "*\Windows\System32\VBoxService.exe" -and $_.Name -like "VBoxService" -and $_.MD5 -like "EBCAC41CF03E3EBDF129CDE441337B57")
             )
         }
         return $serviceReportFiltered
@@ -1250,7 +1254,7 @@ function Get-AppInitDLLs {
 
                     $signature = ""
                     $md5 = ""
-                    if (Test-Path $dllPathResolved -PathType Leaf) {
+                    if (Test-Path $dllPathResolved -PathType Leaf -ErrorAction SilentlyContinue) {
                         $signature = Get-SignatureStatus -filePath $dllPathResolved
                         $md5 = Get-MD5Hash -filePath $dllPathResolved
                     }
