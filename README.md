@@ -68,7 +68,7 @@ Hunt-Persistence -mode "Mode" -strings @("exampleString1", "exampleString2", "ex
 
 ## Remote Usage w/ Hash Verification:
 ```powershell
-if ([BitConverter]::ToString([System.Security.Cryptography.MD5]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes((Invoke-WebRequest -Uri "https://raw.githubusercontent.com/blwhit/PersistenceHunter/refs/heads/main/PersistenceHunter.ps1" -UseBasicP).Content))) -replace '-' -eq "ac52eebc6c98e848b1e4ef5fc2501974") {Invoke-Expression $PersistenceHunter.Content; Hunt-Persistence -mode "Filter" -strings @("ExampleString1", "ExampleString2")} else {Write-Host "Hash verification failed."}
+if (($response = Invoke-WebRequest -Uri "https://raw.githubusercontent.com/blwhit/PersistenceHunter/refs/heads/main/PersistenceHunter.ps1" -UseBasicParsing).StatusCode -eq 200) { if ([BitConverter]::ToString([System.Security.Cryptography.MD5]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes($response.Content))).Replace("-", "") -eq "ac52eebc6c98e848b1e4ef5fc2501974") { Invoke-Expression $response.Content; Hunt-Persistence -mode "Filter" } else { Write-Host "Hash verification failed." } } else { Write-Host "Failed to download the script. Status Code: $($response.StatusCode)" }
 ```
 
 ### Remote Usage w/o Hash Verification:
