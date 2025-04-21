@@ -21,7 +21,7 @@ PeristenceHunter.ps1 can also be used to enumerate all autoruns for manual revie
 
 ---
 
-## Function Syntax:
+### Function Syntax:
 ```powershell
 Hunt-Persistence -mode "Mode" -strings @("exampleString1", "exampleString2", "exampleString3") -csv "C:\FilePath.csv"
 ```
