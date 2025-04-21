@@ -14,6 +14,7 @@ This tool automatically finds potential malware footholds by analyzing the Regis
 - Startup folder path changes via Registry
 - Bootstart key manipulation via Registry
 - Suspicious shortcut targets in the Startup Folder
+- Persistence via AppInitDLLs
 
 PeristenceHunter.ps1 can also be used to enumerate all autoruns for manual review without automatic filtering/flagging.
 
