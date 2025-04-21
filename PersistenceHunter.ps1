@@ -1312,7 +1312,7 @@ function Hunt-Persistence {
     Check-AdminPrivilege
     if ($null -eq $mode -or $mode -eq "") {
         $mode = "auto"
-        Write-Host "- No mode selected, defaulting to 'auto' mode.`n" -ForegroundColor Yellow
+        Write-Host "- No mode selected, defaulting to 'auto`n" -ForegroundColor Yellow
     }
     if ($mode -like "auto") {
         $outputReport += Get-Registry -mode auto
