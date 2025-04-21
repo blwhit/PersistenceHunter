@@ -31,22 +31,22 @@ Hunt-Persistence -mode "Mode" -strings @("exampleString1", "exampleString2", "ex
 
 ### Options:
 - **Mode**: Choose the mode for the script to run and determine the output and what to investigate:
-  - `-mode "Filter"`: Automatically filter and find active suspicious autoruns that may be potential persistence malware footholds.
+  - `-mode "Auto"`: Automatically filter and find active suspicious autoruns that may be potential persistence malware footholds.
   - `-mode "All"`: Return all autoruns and potential persistence mechanisms, no filtering.
   - `-mode "Registry"`: Return all Registry autoruns unfiltered.
   - `-mode "Services"`: Return all Services autoruns unfiltered.
   - `-mode "Tasks"`: Return all Scheduled Tasks autoruns unfiltered.
   - `-mode "Startup"`: Return all Startup item autoruns unfiltered.
 
-- **strings**: `@("exampleString1", "exampleString2", "exampleString3")` — List of suspicious strings to hunt for. Must be used with `-Filter` mode.
+- **strings**: `@("exampleString1", "exampleString2", "exampleString3")` — List of suspicious strings to hunt for. Must be used with `-Auto` mode.
 - **csv**: `"C:\FilePath.csv"` — Generate a CSV report of the findings, optionally specify a file path.
 
 ---
 # Usage Examples: 
 
-### 1. Remote Usage w/ Hash Verification, Filter Mode:
+### 1. Remote Usage w/ Hash Verification, Auto Mode:
 ```powershell
-if (($response = Invoke-WebRequest -Uri "https://raw.githubusercontent.com/blwhit/PersistenceHunter/refs/heads/main/PersistenceHunter.ps1" -UseBasicParsing).StatusCode -eq 200) { if ([BitConverter]::ToString([System.Security.Cryptography.MD5]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes($response.Content))).Replace("-", "") -eq "47bf365b92eeed0acb18de52f0b750bf") { Invoke-Expression $response.Content; Hunt-Persistence -mode "Filter" } else { Write-Host "Hash verification failed." } } else { Write-Host "Failed to download the script. Status Code: $($response.StatusCode)" }
+if (($response = Invoke-WebRequest -Uri "https://raw.githubusercontent.com/blwhit/PersistenceHunter/refs/heads/main/PersistenceHunter.ps1" -UseBasicParsing).StatusCode -eq 200) { if ([BitConverter]::ToString([System.Security.Cryptography.MD5]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes($response.Content))).Replace("-", "") -eq "47bf365b92eeed0acb18de52f0b750bf") { Invoke-Expression $response.Content; Hunt-Persistence -mode "Auto" } else { Write-Host "Hash verification failed." } } else { Write-Host "Failed to download the script. Status Code: $($response.StatusCode)" }
 ```
 
 ### 2. Remote Usage w/o Hash Verification, Default Mode:
