@@ -321,25 +321,25 @@ function Write-CSV {
     Write-Host "Exported to $csvPath with 'Category' as the first column" -ForegroundColor Green
 }
 
-
 function Output-Report {
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter()]
         [array]$report
     )
     
-    # Calculate the number of objects in $report input
+    # Check if report has any objects
+    if (-not $report -or $report.Count -eq 0) {
+        Write-Host "`nNo persistence mechanisms were found." -ForegroundColor Yellow
+        return
+    }
+
     $numObjects = $report.Count
 
-    # Output the number of objects found
     Write-Host "`n`n`n $numObjects POTENTIAL PERSISTENT FOOTHOLDS FOUND: `n" -ForegroundColor Green
     Write-Host "+ ------------------------------ +"
     
-    # Loop through each object in the report
     foreach ($obj in $report) {
         Write-Host ""
-        
-        # Loop through each property of the object
         foreach ($property in $obj.PSObject.Properties) {
             if ($null -ne $property.Value -and $property.Value -ne "") {
                 Write-Host ("{0,-18}: {1}" -f $property.Name, $property.Value)
