@@ -22,7 +22,8 @@ PeristenceHunter.ps1 can also be used to enumerate all autoruns for manual revie
 - [T1547: Boot or Logon Autostart Execution](https://attack.mitre.org/techniques/T1547/001/)
 - [T1053: Scheduled Task/Job](https://attack.mitre.org/techniques/T1053/)
 - [T1546.010: Event Triggered Execution: AppInit DLLs](https://attack.mitre.org/techniques/T1546/010/)
-- 
+
+
 ---
 
 ## Function Syntax:
