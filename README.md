@@ -13,13 +13,15 @@ This tool automatically finds potential malware footholds by analyzing the Regis
 - Bootstart key manipulation via Registry
 - Suspicious shortcut targets in the Startup Folder
 
+PeristenceHunter.ps1 can also be used to enumerate all autoruns for manual review without automatic filtering/flagging.
+
 ### Built from sources:
 - [T1547: Boot or Logon Autostart Execution](https://attack.mitre.org/techniques/T1547/001/)
 - [T1053: Scheduled Task/Job](https://attack.mitre.org/techniques/T1053/)
 
 ---
 
-## Syntax:
+## Function Syntax:
 ```powershell
 Hunt-Persistence -mode "Mode" -strings @("exampleString1", "exampleString2", "exampleString3") -csv "C:\FilePath.csv"
 ```
@@ -37,8 +39,9 @@ Hunt-Persistence -mode "Mode" -strings @("exampleString1", "exampleString2", "ex
 - **csv**: `"C:\FilePath.csv"` — Generate a CSV report of the findings, optionally specify a file path.
 
 ---
+# Usage
 
-## Remote Usage w/ Hash Verification:
+### Remote Usage w/ Hash Verification:
 ```powershell
 if (($response = Invoke-WebRequest -Uri "https://raw.githubusercontent.com/blwhit/PersistenceHunter/refs/heads/main/PersistenceHunter.ps1" -UseBasicParsing).StatusCode -eq 200) { if ([BitConverter]::ToString([System.Security.Cryptography.MD5]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes($response.Content))).Replace("-", "") -eq "ac52eebc6c98e848b1e4ef5fc2501974") { Invoke-Expression $response.Content; Hunt-Persistence -mode "Filter" } else { Write-Host "Hash verification failed." } } else { Write-Host "Failed to download the script. Status Code: $($response.StatusCode)" }
 ```
