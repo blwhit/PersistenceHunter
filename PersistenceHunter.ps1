@@ -196,10 +196,10 @@ $global:tlds = @(
 
 function Check-AdminPrivilege {
     if (([System.Security.Principal.WindowsIdentity]::GetCurrent().Groups -match 'S-1-5-32-544')) {
-        Write-Host "`n[ Running as admin ]" -ForegroundColor Yellow
+        Write-Host "- Running as admin " -ForegroundColor Yellow
     }
     else {
-        Write-Host "`n[ Running in unprivileged context ]" -ForegroundColor Yellow
+        Write-Host "- Running in unprivileged context " -ForegroundColor Yellow
     }
 }
 
@@ -327,8 +327,19 @@ function Output-Report {
         [Parameter(Mandatory=$true)]
         [array]$report
     )
+    
+    # Calculate the number of objects in $report input
+    $numObjects = $report.Count
+
+    # Output the number of objects found
+    Write-Host "`n`n`n $numObjects POTENTIAL PERSISTENT FOOTHOLDS FOUND: `n" -ForegroundColor Green
+    Write-Host "+ ------------------------------ +"
+    
+    # Loop through each object in the report
     foreach ($obj in $report) {
         Write-Host ""
+        
+        # Loop through each property of the object
         foreach ($property in $obj.PSObject.Properties) {
             if ($null -ne $property.Value -and $property.Value -ne "") {
                 Write-Host ("{0,-18}: {1}" -f $property.Name, $property.Value)
@@ -336,7 +347,9 @@ function Output-Report {
         }
         Write-Host "`n" + ("-" * 30)
     }
+    Write-Host "`n"
 }
+
 
 
 function Check-TLD {
@@ -586,16 +599,14 @@ function Get-RegistryValueData {
 
 ################################################################################################################################################################################################################
 
-
-
 # REGISTRY #
 
 function Get-Registry {
     [CmdletBinding()]
     param (
-    [Parameter()]
-    [string]
-    $mode
+        [Parameter()]
+        [string]
+        $mode
     )
     # List of registry paths to enumerate, including for ALL users (if we have admin perms)
     $RegistryPaths = @(
@@ -619,7 +630,10 @@ function Get-Registry {
         
         # Policies-based autostarts
         "HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run",
-        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run"
+        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run",
+
+        # Add check for BootExecute manipulation here
+        "HKLM:\System\CurrentControlSet\Control\Session Manager"
     )
 
     # User custom function to enumerate registry paths, attempt to look for all user hives
@@ -645,12 +659,13 @@ function Get-Registry {
             $regObjects += Get-RegistryValueData -Path $Path
         }
     }
+    
     if ($mode -like "filter") {
         $regObjectsFiltered = @()
-    
+
         foreach ($reg in $regObjects) {
             $matchDetails = @()
-    
+
             # Special static check for startup folder manipulation
             if ($reg.KeyName -eq "Common Startup" -and $reg.KeyValue -notlike "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup") {
                 $matchDetails += "Startup Folder Path Manipulation"
@@ -658,36 +673,43 @@ function Get-Registry {
             elseif ($reg.KeyName -eq "Startup" -and $reg.KeyValue -notlike "*\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup") {
                 $matchDetails += "Startup Folder Path Manipulation"
             }
-    
+
             # Signature check
             if ($reg.FileSignature -ne "Valid" -and -not [string]::IsNullOrWhiteSpace($reg.ExecuteFile)) {
                 $matchDetails += "Signature Invalid"
             }
-    
+
             # Suspicious path check
             $suspiciousPathMatches = Check-Suspicious-Strings -string $reg.ExecuteFile -list $global:susFilepathStrings
             if ($suspiciousPathMatches.Count -gt 0) {
                 $matchDetails += "Suspicious Path Match: $($suspiciousPathMatches -join ', ')"
             }
-    
+
             # Suspicious arguments check
             $suspiciousArgMatches = Check-Suspicious-Strings -string $reg.ExecuteArgs -list $global:suspiciousArgStrings
             if ($suspiciousArgMatches.Count -gt 0) {
                 $matchDetails += "Suspicious Args Match: $($suspiciousArgMatches -join ', ')"
             }
-    
+
             # IP matches in arguments
             $ipMatches = Check-IP -string $reg.ExecuteArgs
             if ($ipMatches.Count -gt 0) {
                 $matchDetails += "Matched IP Address: $($ipMatches -join ', ')"
             }
-    
+
             # Domain matches in arguments (use Check-TLD)
             $domainMatch = Check-TLD -string $reg.ExecuteArgs
             if ($null -ne $domainMatch) {
                 $matchDetails += "Matched Domain: $domainMatch"
             }
-    
+
+            # Check for BootExecute manipulation
+            if ($reg.Path -eq "HKLM:\System\CurrentControlSet\Control\Session Manager" -and $reg.KeyName -eq "BootExecute") {
+                if ($reg.KeyValue -notlike "autocheck autochk *") {
+                    $matchDetails += "Malicious BootExecute Modification"
+                }
+            }
+
             # Final filter
             if ($matchDetails.Count -gt 0) {
                 $filteredReg = $reg.PSObject.Copy()
@@ -695,9 +717,10 @@ function Get-Registry {
                 $regObjectsFiltered += $filteredReg
             }
         }
-    
+
         return $regObjectsFiltered
     }
+
     # Assume $regObjects is your starting list of registry objects
     $filteredRegObjects = @()
 
@@ -890,6 +913,8 @@ function Get-Startups{
     [Parameter()]
     [string]
     $mode)
+
+    
 
 
     $startupObjects = @()
@@ -1269,6 +1294,9 @@ function Hunt-Persistence {
         [string[]]$strings,
         [string]$csvPath)
 
+    Write-Host "`n[ PersistenceHunter.ps1 ]"
+    Write-Host "[ https://github.com/blwhit/PersistenceHunter ]`n"
+
     # Ensure global lists exist and append the provided $strings to them
     if ($strings) {
         foreach ($string in $strings) {
@@ -1279,7 +1307,7 @@ function Hunt-Persistence {
     Check-AdminPrivilege
     if ($null -eq $mode -or $mode -eq "") {
         $mode = "filter"
-        Write-Host "[ No mode selected, defaulting to 'Filter' mode. ]`n" -ForegroundColor Yellow
+        Write-Host "- No mode selected, defaulting to 'Filter' mode.`n" -ForegroundColor Yellow
     }
     if ($mode -like "filter") {
         $outputReport += Get-Registry -mode Filter
