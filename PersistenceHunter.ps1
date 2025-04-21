@@ -1,5 +1,6 @@
 # Persistence Hunter v1.0 #
-
+# https://github.com/blwhit/PersistenceHunter
+ 
 # Scope:
 
 # Enumerate and hunt for most common methods of persistence used by malware. 
@@ -12,8 +13,6 @@
 
 # [ MAIN ] #
 # -------- #
-
-
 
 ################################################################################################################################################################################################################
 # GLOBAL VARIABLES #
@@ -351,8 +350,6 @@ function Output-Report {
     Write-Host "`n"
 }
 
-
-
 function Check-TLD {
     param (
         [string]$string
@@ -435,7 +432,6 @@ function Resolve-ExecutePath {
     return $expanded
 }
 
-
 function Resolve-RegExecutePath {
     param(
         [string]$rawPath
@@ -468,8 +464,6 @@ function Resolve-RegExecutePath {
 }
 
 
-
-
 # Helper: Get digital signature status
 function Get-SignatureStatus {
     param($filePath)
@@ -499,7 +493,6 @@ function Get-MD5Hash {
         return "File Not Found"
     }
 }
-
 
 
 # Function to enumerate registry keys based on inputted path
@@ -595,8 +588,6 @@ function Get-RegistryValueData {
 
     return $RegistryEntries
 }
-
-
 
 ################################################################################################################################################################################################################
 # REGISTRY #
@@ -742,12 +733,7 @@ function Get-Registry {
 }
 
 
-
-
-
-
 ################################################################################################################################################################################################################
-
 
 function Get-Tasks {
     [CmdletBinding()]
@@ -901,14 +887,7 @@ function Get-Tasks {
 }
 
 
-
-
 # ################################################################################################################################################################################################################
-
-
-
-
-
 
 # STARTUP FOLDERS #
 function Get-Startups{
@@ -1103,15 +1082,7 @@ function Get-Startups{
 
 }
 
-
-
-
-
 # ################################################################################################################################################################################################################
-
-
-
-
 
 # SERVICES #
 
