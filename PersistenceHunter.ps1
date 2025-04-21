@@ -324,11 +324,12 @@ function Write-CSV {
 function Output-Report {
     param (
         [Parameter()]
+        [AllowEmptyCollection()]
         [array]$report
     )
     
     # Check if report has any objects
-    if (-not $report -or $report.Count -eq 0 -or $report -eq $null -or $report -eq "") {
+    if (-not $report -or $report.Count -eq 0) {
         Write-Host "`nNo persistence mechanisms were found." -ForegroundColor Yellow
         return
     }
