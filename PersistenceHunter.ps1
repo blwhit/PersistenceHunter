@@ -330,7 +330,7 @@ function Output-Report {
     
     # Check if report has any objects
     if (-not $report -or $report.Count -eq 0) {
-        Write-Host "`nNo persistence mechanisms were found." -ForegroundColor Yellow
+        Write-Host "`nNo persistence mechanisms were found.`n" -ForegroundColor Red
         return
     }
 
@@ -657,7 +657,7 @@ function Get-Registry {
         }
     }
 
-    if ($mode -eq "filter") {
+    if ($mode -eq "auto") {
         $regObjectsFiltered = @()
 
         foreach ($reg in $regObjects) {
@@ -840,7 +840,7 @@ function Get-Tasks {
         }
     }
 
-    if ($mode -like "filter") {
+    if ($mode -like "auto") {
         $tasksFiltered = @()
 
         foreach ($task in $taskObjects) {
@@ -1038,7 +1038,7 @@ function Get-Startups{
         }
     }
     # Filter
-    if ($mode -like "Filter") {
+    if ($mode -like "auto") {
         $startupFiltered = @()
 
         foreach ($item in $startupObjects) {
@@ -1164,7 +1164,7 @@ function Get-Services {
             Flags         = ""
         }
     }
-    if ($mode -like "filter") {
+    if ($mode -like "auto") {
         $serviceReportFiltered = @()
     
         foreach ($service in $services) {
@@ -1311,14 +1311,14 @@ function Hunt-Persistence {
     $outputReport = @()
     Check-AdminPrivilege
     if ($null -eq $mode -or $mode -eq "") {
-        $mode = "filter"
-        Write-Host "- No mode selected, defaulting to 'Filter' mode.`n" -ForegroundColor Yellow
+        $mode = "auto"
+        Write-Host "- No mode selected, defaulting to 'auto' mode.`n" -ForegroundColor Yellow
     }
-    if ($mode -like "filter") {
-        $outputReport += Get-Registry -mode Filter
-        $outputReport += Get-Tasks -mode Filter
-        $outputReport += Get-Services -mode Filter
-        $outputReport += Get-Startups -mode Filter
+    if ($mode -like "auto") {
+        $outputReport += Get-Registry -mode auto
+        $outputReport += Get-Tasks -mode auto
+        $outputReport += Get-Services -mode auto
+        $outputReport += Get-Startups -mode auto
         $outputReport += Get-AppInitDLLs
         Output-Report -report $outputReport
     }
