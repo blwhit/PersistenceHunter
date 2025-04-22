@@ -64,5 +64,6 @@ Hunt-Persistence -mode "Mode" -strings @("exampleString1", "exampleString2", "ex
 ```
 
 ---
-PersistenceHunter.ps1 MD5: AC261BE4821560CAD63BD81D24A19B3F
+#### PersistenceHunter.ps1 
+###### MD5: AC261BE4821560CAD63BD81D24A19B3F
 ---
