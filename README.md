@@ -44,21 +44,25 @@ Hunt-Persistence -mode "Mode" -strings @("exampleString1", "exampleString2", "ex
 ---
 # Usage Examples: 
 
-### 1. Remote Usage w/ Hash Verification, Auto Mode:
+### 1. Remote Usage One Liner w/ Hash Verification, Auto Mode:
 ```powershell
-if (($response = Invoke-WebRequest -Uri "https://raw.githubusercontent.com/blwhit/PersistenceHunter/refs/heads/main/PersistenceHunter.ps1" -UseBasicParsing).StatusCode -eq 200) { if ([BitConverter]::ToString([System.Security.Cryptography.MD5]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes($response.Content))).Replace("-", "") -eq "47bf365b92eeed0acb18de52f0b750bf") { Invoke-Expression $response.Content; Hunt-Persistence -mode "Auto" } else { Write-Host "Hash verification failed." } } else { Write-Host "Failed to download the script. Status Code: $($response.StatusCode)" }
+if (($response = Invoke-WebRequest -Uri "https://raw.githubusercontent.com/blwhit/PersistenceHunter/refs/heads/main/PersistenceHunter.ps1" -UseBasicParsing).StatusCode -eq 200) { if ([BitConverter]::ToString([System.Security.Cryptography.MD5]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes($response.Content))).Replace("-", "") -eq "AC261BE4821560CAD63BD81D24A19B3F") { Invoke-Expression $response.Content; Hunt-Persistence -mode "Auto" } else { Write-Host "Hash verification failed." } } else { Write-Host "Failed to download the script. Status Code: $($response.StatusCode)" }
 ```
 
-### 2. Remote Usage w/o Hash Verification, Default Mode:
+### 2. Remote Usage w/o Hash Verification:
 ```powershell
-Invoke-Expression (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/blwhit/PersistenceHunter/refs/heads/main/PersistenceHunter.ps1" -UseBasicP).Content; Hunt-Persistence
+Invoke-Expression (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/blwhit/PersistenceHunter/refs/heads/main/PersistenceHunter.ps1" -UseBasicP).Content;
+Hunt-Persistence
 ```
 
 ---
 
-### 3. Local Usage w/ All Arguments:
+### 3. Local Usage w/ Arguments:
 ```powershell
-Invoke-Expression (Get-Content "C:\Path\To\PersistenceHunter.ps1" -Raw); Hunt-Persistence -mode "Mode" -strings @("exampleString1", "exampleString2", "exampleString3") -csv "C:\FilePath.csv"
+Invoke-Expression (Get-Content "C:\Path\To\PersistenceHunter.ps1" -Raw);
+Hunt-Persistence -mode "Mode" -strings @("exampleString1", "exampleString2", "exampleString3") -csv "C:\FilePath.csv"
 ```
 
+---
+PersistenceHunter.ps1 MD5: AC261BE4821560CAD63BD81D24A19B3F
 ---
