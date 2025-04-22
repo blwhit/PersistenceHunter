@@ -1400,6 +1400,9 @@ function Hunt-Persistence {
         $outputReport += Get-Startups 
         Output-Report -report $outputReport
     }
+    elseif($mode -like "manual"){ 
+        Manual-Review
+    }
     else {
         Write-Host "Invalid mode specified, exiting..." -ForegroundColor Red
     }
@@ -1407,5 +1410,51 @@ function Hunt-Persistence {
     # CSV Output
     if ($csv) {
         Write-CSV -csvPath $csvPath -outputReport $outputReport
+    }
+}
+
+function Manual-Review {
+    param(
+        [string[]]$RegistryPaths = @(
+            "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+            "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce",
+            "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+            "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce"
+        ),
+        [string]$UserRegistryHive = 'Registry::HKEY_USERS\'
+    )
+
+    # Function to clean up properties from output
+    function Clean-Properties {
+        param([object]$item)
+        $item.PSObject.Properties.Remove('PSPath')
+        $item.PSObject.Properties.Remove('PSParentPath')
+        $item.PSObject.Properties.Remove('PSChildName')
+        $item.PSObject.Properties.Remove('PSDrive')
+        $item.PSObject.Properties.Remove('PSProvider')
+        return $item
+    }
+
+    # Get registry values for both HKLM, HKCU and global user registry keys
+    Get-ItemProperty -Path $RegistryPaths | 
+        ForEach-Object { Clean-Properties $_ }
+
+    # Loop through each user registry hive in HKEY_USERS and pull Run/RunOnce keys
+    $usersRegistryPaths = Get-ChildItem -Path $UserRegistryHive | Where-Object { $_.Name -notmatch '^(S-1-5-18|S-1-5-19|S-1-5-20)$' }  # Exclude system accounts
+
+    foreach ($user in $usersRegistryPaths) {
+        $userHivePath = $user.PSPath
+        $userRunPath = "$userHivePath\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
+        $userRunOncePath = "$userHivePath\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce"
+        
+        # Check if the Run key exists and get its values
+        if (Test-Path $userRunPath) {
+            Get-ItemProperty -Path $userRunPath | ForEach-Object { Clean-Properties $_ }
+        }
+
+        # Check if the RunOnce key exists and get its values
+        if (Test-Path $userRunOncePath) {
+            Get-ItemProperty -Path $userRunOncePath | ForEach-Object { Clean-Properties $_ }
+        }
     }
 }
