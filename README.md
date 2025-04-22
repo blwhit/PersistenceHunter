@@ -33,10 +33,10 @@ Hunt-Persistence -mode "Mode" -strings @("exampleString1", "exampleString2", "ex
 - **Mode**: Choose the mode for the script to run and determine the output and what to investigate:
   - `-mode "Auto"`: Automatically filter and find active suspicious autoruns that may be potential persistence malware footholds.
   - `-mode "All"`: Return all autoruns and potential persistence mechanisms, no filtering.
-  - `-mode "Registry"`: Return all Registry autoruns unfiltered.
-  - `-mode "Services"`: Return all Services autoruns unfiltered.
-  - `-mode "Tasks"`: Return all Scheduled Tasks autoruns unfiltered.
-  - `-mode "Startup"`: Return all Startup item autoruns unfiltered.
+  - `-mode "Registry"`: Return all Registry autoruns.
+  - `-mode "Services"`: Return all Services autoruns.
+  - `-mode "Tasks"`: Return all Scheduled Tasks autoruns.
+  - `-mode "Startup"`: Return all Startup item autoruns.
 
 - **strings**: `@("exampleString1", "exampleString2", "exampleString3")` — List of suspicious strings to hunt for. Must be used with `-Auto` mode.
 - **csv**: `"C:\FilePath.csv"` — Generate a CSV report of the findings, optionally specify a file path.
