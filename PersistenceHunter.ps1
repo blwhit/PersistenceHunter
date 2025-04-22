@@ -16,20 +16,53 @@
 
 ################################################################################################################################################################################################################
 # GLOBAL VARIABLES #
-
 $global:susFilepathStrings = @(
+    "\Windows\System32\Tasks", # Common directory for scheduled tasks [from article]
+    "\Windows\System32\Explorer\ShellServiceObjectDelayLoad", # Registry path in article
+    "C:\ProgramData\\.*\.exe", # Common location for executable files related to persistence
+    "\Microsoft\Internet Explorer\Quick Launch\", # Suspicious path
+    "\Users\Public\", # Often abused for persistence
+    "winupdate.exe", # Malicious filename
+    "services32.exe", # Malicious filename
+    "winlogon32.exe", # Malicious filename
+    "system32.dll", # Malicious filename outside of System32
+    "svch0st.exe", # Common malicious filename [from article]
+    "svchost.dll", # Common malicious filename [from article]
+    "svchosts.exe", # Common malicious filename [from article]
+    "winsvr.exe", # Malicious filename [from article]
+    "ntshrui.dll", # Suspicious file [from article]
+    "mspk.sys", # Suspicious file [from article]
+    "noise0", # Suspicious file [from article]
+    "tabcteng.dll", # Malicious file [from article]
+    "aw.exe", # Agent Tesla [from article]
+    "llehS|2e|tpircSW", # AZORult [from article]
+    "si_.cb", # Qakbot file [from article]
+    "MOUSEISLAND", # TrickBot file [from article]
+    "Packinglist-Invoice101.pps", # NanoCore [from article]
+    "Filenames ending in .bin", # Ursnif [from article]
+    "PowerView.ps1", # PowerShell tool for enumeration
+    "PSReflect.psm1", # PowerShell script reflection
+    "Mimikatz", # Credential dumping tool
+    "PSEXESVC-", # Malicious file related to PSEXEC
+    "evil.exe", # Suspicious filename
+    "\KAPE_cases\", # Mimics legitimate tool, suspicious usage
+    "\Volatility\", # Mimics legitimate tool, suspicious usage
+    "\Kansa\", # Mimics legitimate tool, suspicious usage
+    "\FastIR\", # Mimics legitimate tool, suspicious usage
+    "\Temp\SomeMFT", # MFT analysis or malicious data
+    "C:\evtx_compromised_machine", # Malicious event log directory
+    "\Prefetch\[Tool name].exe-RANDOM.pf", # Prefetch file for malicious tools
+    "sc.exe", # Service control executable (often misused for persistence)
     "\AppData\",
     "\AppData\Roaming\",
     "\AppData\Local\Temp\",
     "\Temp\",
     "\tmp\",
     "\ProgramData\",
-    "\Users\Public\",
     "\Recycle.Bin\",
     "ecycle.Bin\",
     "\Windows\Temp\",
     "\Windows\Tasks\",
-    "\Windows\System32\Tasks\",
     "\Windows\Fonts\",
     "\Windows\debug\",
     "\Windows\help\",
@@ -46,30 +79,87 @@ $global:susFilepathStrings = @(
     ".cmd",
     ".ps1",
     ".psm1",
-    "winupdate.exe",
-    "services32.exe",
-    "winlogon32.exe",
-    "system32.dll",
     "qwoptyx.exe",
     "abc123.exe",
     "a1b2c3.dll",
-    "svch0st.exe", # Often malicious if in unexpected locations [1, 2]
-    "svchost.dll", # Often malicious if in unexpected locations [1, 2]
-    "svchosts.exe", # Often malicious if in unexpected locations [1, 2]
-    "winsvr.exe", # Typically malicious [1, 2]
-    "ntshrui.dll", # Suspicious location [1, 2]
-    "mspk.sys", # Considered suspicious [1, 2]
-    "noise0", # Suspicious artifact [1, 2]
-    "tabcteng.dll", # A malicious file [2]
-    # Homoglyph examples
     "svch0st", # Zero instead of 'o'
     "wind0ws", # Zero instead of 'o'
-    # File paths associated with AppInit DLLs (from conversation history)
     "AppInit_DLLs",
     "LoadAppInit_DLLs"
 )
 
 $global:suspiciousArgStrings = @(
+    "sc create", # Create a service (often used for persistence) [from article]
+    "sc config", # Configuring a service for persistence [from article]
+    "binPath=", # Suspicious service path argument [from article]
+    "start= auto", # Auto-start services for persistence [from article]
+    "failure, actions= restart", # Service failure persistence [from article]
+    "schtasks /create", # Creating scheduled tasks [from article]
+    "schtasks /delete", # Deleting scheduled tasks (abusing task scheduler) [from article]
+    "schtasks /change", # Changing scheduled tasks [from article]
+    "/sc minute", # Scheduling recurring tasks [from article]
+    "/sc hourly", # Scheduling recurring tasks [from article]
+    "/sc daily", # Scheduling recurring tasks [from article]
+    "/sc onlogon", # Logon-based execution [from article]
+    "/sc onstart", # Startup-based execution [from article]
+    "/tn", # Task name argument for scheduled tasks [from article]
+    "/tr", # Task run argument for scheduled tasks [from article]
+    "/st", # Task start time for scheduled tasks [from article]
+    "/ru", # Task run as user [from article]
+    "/rp", # Task run with password [from article]
+    "/vbr", # Task parameters for scheduled tasks [from article]
+    "reg add", # Adding registry entries for persistence [from article]
+    "reg delete", # Deleting registry entries [from article]
+    "/v", # Registry value argument [from article]
+    "/t REG_SZ", # Registry type argument [from article]
+    "/t REG_DWORD", # Registry type argument [from article]
+    "HKLM\Software\Microsoft\Windows\CurrentVersion\Run", # Registry key for autostart [from article]
+    "HKCU\Software\Microsoft\Windows\CurrentVersion\Run", # Registry key for autostart [from article]
+    "HKLM\Software\Microsoft\Windows\CurrentVersion\RunOnce", # Registry key for autostart [from article]
+    "HKCU\Software\Microsoft\Windows\CurrentVersion\RunOnce", # Registry key for autostart [from article]
+    "HKLM\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders", # Suspicious registry key [from article]
+    "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders", # Suspicious registry key [from article]
+    "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\Userinit", # Userinit persistence registry [from article]
+    "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\AppInit_DLLs", # AppInit DLL persistence [from article]
+    "powershell -ExecutionPolicy Bypass", # PowerShell execution policy bypass [from article]
+    "powershell -WindowStyle Hidden", # Hide PowerShell window [from article]
+    "powershell -NoProfile", # Run PowerShell without profile [from article]
+    "wscript", # Windows Script Host execution [from article]
+    "cscript", # Windows Script Host execution [from article]
+    "cmd /c start /b", # Background execution [from article]
+    "net use", # Network share command [from article]
+    "nc -e", # Netcat reverse shell [from article]
+    "ncat", # Netcat alternative [from article]
+    "curl .*\|iex", # Download and execute via curl [from article]
+    "wget .*\|iex", # Download and execute via wget [from article]
+    "@SSL\\DavWWWRoot\\.*\.ps1", # WebDAV location [from article]
+    "powershell -EncodedCommand", # PowerShell base64 encoded command [from article]
+    "powershell -e", # PowerShell execution [from article]
+    "hidden \$\(gc ", # Obfuscated PowerShell command [from article]
+    "\[char\[]\]\(.*\)\-join", # Array manipulation (obfuscation) [from article]
+    "=wscri\& set", # JScript execution [from article]
+    "iex\(", # Invoke-Expression abbreviation [from article]
+    "iwr ", # Invoke-WebRequest abbreviation [from article]
+    "Invoke-WebRequest ", # Download content [from article]
+    "Invoke-Expression", # PowerShell expression execution [from article]
+    "Invoke-Expression.*FromBase64String", # PowerShell command obfuscation [from article]
+    "Base64", # Base64 encoded payload [from article]
+    "mshta", # Microsoft HTML Application (often used for obfuscation) [from article]
+    "-nop", # No profile (PowerShell execution) [from article]
+    "-NoProfile", # No profile (PowerShell execution) [from article]
+    "-W Hidden", # Hide window [from article]
+    "-WindowStyle Hidden", # Hide window [from article]
+    "-ExecutionPolicy Bypass", # Bypass execution policy [from article]
+    "-NonInteractive", # Non-interactive PowerShell session [from article]
+    "-Command ", # Run PowerShell command [from article]
+    "(New-Object System.Net.Webclient).DownloadString", # Download string [from article]
+    "(New-Object System.Net.Webclient).DownloadFile", # Download file [from article]
+    "iex\(", # Invoke-Expression abbreviation [from article]
+    "curl .*\|iex", # Download and execute via curl [from article]
+    "wget .*\|iex", # Download and execute via wget [from article]
+    "http'+'s://", # URL obfuscation [from article]
+    "//:sptth", # Obfuscated HTTP(s) [from article]
+    "//:ptth", # Obfuscated HTTP(s) [from article]
     "add .*AppInit_DLLs",
     "delete .*AppInit_DLLs",
     "LoadAppInit_DLLs.*1",
@@ -173,6 +263,7 @@ $global:suspiciousArgStrings = @(
     "/windowstyl h", # Window Hidden [4]
     "/windowstyle h " # Window Hidden [4]
 )
+
 
 $global:tlds = @(
     ".com", ".net", ".org", ".gov", ".edu", ".int", ".mil", ".jp", ".de", ".uk", ".fr",
@@ -561,7 +652,7 @@ function Get-RegistryValueData {
                 Path          = $Path
                 User          = $user
                 KeyName       = $prop.Name
-                KeyValue = if ($prop.Value -is [System.Array]) { $prop.Value -join " " } else { $prop.Value }
+                KeyValue = if ($prop.Value -is [System.Array]) { $prop.Value | ForEach-Object { $_.ToString() } -join " " } else { $prop.Value }
                 ExecuteFile   = $exePath
                 FileSignature = $fileSignature
                 MD5           = $fileMD5
@@ -571,19 +662,7 @@ function Get-RegistryValueData {
         }
     }
     catch {
-        $RegistryEntries += [PSCustomObject]@{
-            Category      = "Registry"
-            Hive          = $Path.Split(":")[0]
-            Path          = $Path
-            User          = "Unknown"
-            KeyName       = "N/A"
-            KeyValue      = "N/A"
-            ExecuteFile   = "N/A"
-            FileSignature = "N/A"
-            MD5           = "N/A"
-            ExecuteArgs   = ""
-            Flags = ""
-        }
+        write-host "Unable to enumerate reg key: $path" -ForegroundColor Red
     }
 
     return $RegistryEntries
@@ -700,7 +779,8 @@ function Get-Registry {
         # ✅ Now do the post-filtering here
         $regObjectsFiltered = $regObjectsFiltered | Where-Object {
             !(
-                ($_.Path -like "*\Software\Microsoft\Windows\CurrentVersion\Run" -and $_.KeyValue -like "*\AppData\Local\Microsoft\OneDrive\OneDrive.exe*" -and $_.ExecuteFile -like "*\AppData\Local\Microsoft\OneDrive\OneDrive.exe")
+                ($_.Path -like "*\Software\Microsoft\Windows\CurrentVersion\Run" -and $_.KeyValue -like "*\AppData\Local\Microsoft\OneDrive\OneDrive.exe*" -and $_.ExecuteFile -like "*\AppData\Local\Microsoft\OneDrive\OneDrive.exe") -or
+                ($_.Path -like "*Software\Microsoft\Windows\CurrentVersion\Run" -and $_.KeyName -like "Microsoft Edge Update" -and $_.ExecuteFile -like "*MicrosoftEdgeUpdateCore.exe")
             )
         }
     
@@ -873,12 +953,15 @@ function Get-Tasks {
             !(
                 ($_.ExecuteSignature -eq "Valid" -and $_.ExecutePath -ieq "C:\WINDOWS\system32\usoclient.exe") -or
                 ($_.ExecuteSignature -eq "Valid" -and $_.ExecutePath -like "C:\ProgramData\Microsoft\Windows Defender\Platform*") -or
-                ($_.Name -like "UninstallSMB1*" -and $_.Path -like "\Microsoft\Windows\SMB\" -and $_.Flags -like "Suspicious Args Match: hidden, -nop, -NoProfile, -WindowStyle Hidden, -NonI, -NonInteractive" -and $_.Execute -like "*%windir%\system32\WindowsPowerShell\v1.0\powershell.exe*") -or
+                ($_.Name -like "UninstallSMB1*" -and $_.Path -like "\Microsoft\Windows\SMB\" -and $_.Arguments -like "*SmbShare\DisableUnusedSmb*-Scenario*" -and $_.Execute -like "*%windir%\system32\WindowsPowerShell\v1.0\powershell.exe*") -or
                 ($_.Name -like "GatherNetworkInfo" -and $_.Execute -like "%windir%\system32\gatherNetworkInfo.vbs" -and $_.Path -like "\Microsoft\Windows\NetTrace\") -or
                 ($_.Name -eq "ScheduledDefrag" -and $_.Path -like "\Microsoft\Windows\Defrag\" -and $_.Arguments -like "*-C*") -or
                 ($_.Name -match "OneDrive.*(Reporting Task|Standalone Update Task|Startup Task)" -and $_.Path -eq "\" -and (($_.ExecutePath -like "C:\Users\*\AppData\Local\Microsoft\OneDrive\OneDriveStandaloneUpdater.exe" -and ($_.Arguments -eq "/reporting" -or -not $_.Arguments)) -or ($_.ExecutePath -like "C:\Users\*\AppData\Local\Microsoft\OneDrive\*\OneDriveLauncher.exe" -and $_.Arguments -eq "/startInstances"))) -or
                 ($_.ExecutePath -like "*\Tools\internet_detector\internet_detector.exe" -and $_.Name -like "Internet Detector" -and $_.ExecuteMD5 -like "2F429D32D213ACAD6BB90C05B4345276") -or
-                ($_.ExecutePath -like "*\Program Files\Npcap\CheckStatus.bat" -and $_.Name -like "npcapwatchdog" -and $_.ExecuteMD5 -like "CA8A429838083C351839C258679BC264")
+                ($_.ExecutePath -like "*\Program Files\Npcap\CheckStatus.bat" -and $_.Name -like "npcapwatchdog" -and $_.ExecuteMD5 -like "CA8A429838083C351839C258679BC264") -or
+                ($_.Name -like "SynchronizeTime" -and $_.Path -like "\Microsoft\Windows\Time Synchronization\" -and $_.Execute -like "%windir%\system32\sc.exe" -and $_.Arguments -like "start w32time task_started") -or
+                ($_.Name -like "UPnPHostConfig" -and $_.Path -like "\Microsoft\Windows\UPnP\" -and $_.Execute -like "sc.exe" -and $_.Arguments -like "config upnphost start= auto") -or
+                ($_.Name -like "Scheduled Start" -and $_.Path -like "\Microsoft\Windows\WindowsUpdate\" -and $_.Execute -like "C:\windows\system32\sc.exe" -and $_.Arguments -like "start wuauserv")
             )
         }   
         return $tasksFiltered
@@ -1284,7 +1367,7 @@ function Hunt-Persistence {
     Check-AdminPrivilege
     if ($null -eq $mode -or $mode -eq "") {
         $mode = "auto"
-        Write-Host "- No mode selected, defaulting to 'auto`n" -ForegroundColor Yellow
+        Write-Host "- No mode selected, defaulting to 'auto'`n" -ForegroundColor Yellow
     }
     if ($mode -like "auto") {
         $outputReport += Get-Registry -mode auto
