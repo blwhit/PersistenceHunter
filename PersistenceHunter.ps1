@@ -659,7 +659,8 @@ function Get-RegistryValueData {
         }
     }
     catch {
-        write-host "Unable to enumerate reg key: $path" -ForegroundColor Red
+        continue
+        #write-host "Unable to enumerate reg key: $path" -ForegroundColor Red
     }
 
     return $RegistryEntries
