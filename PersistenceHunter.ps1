@@ -647,64 +647,65 @@ function Get-Registry {
             $regObjects += Get-RegistryValueData -Path $Path
         }
     }
-
     if ($mode -eq "auto") {
         $regObjectsFiltered = @()
-
+    
         foreach ($reg in $regObjects) {
             $matchDetails = @()
-
+    
             if ($reg.KeyName -eq "Common Startup" -and $reg.KeyValue -notlike "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup") {
                 $matchDetails += "Startup Folder Path Manipulation"
             }
             elseif ($reg.KeyName -eq "Startup" -and $reg.KeyValue -notlike "*\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup") {
                 $matchDetails += "Startup Folder Path Manipulation"
             }
-
+    
             if ($reg.FileSignature -ne "Valid" -and -not [string]::IsNullOrWhiteSpace($reg.ExecuteFile)) {
                 $matchDetails += "Signature Invalid"
             }
-
+    
             $suspiciousPathMatches = Check-Suspicious-Strings -string $reg.ExecuteFile -list $global:susFilepathStrings
             if ($suspiciousPathMatches.Count -gt 0) {
                 $matchDetails += "Suspicious Path Match: $($suspiciousPathMatches -join ', ')"
             }
-
+    
             $suspiciousArgMatches = Check-Suspicious-Strings -string $reg.ExecuteArgs -list $global:suspiciousArgStrings
             if ($suspiciousArgMatches.Count -gt 0) {
                 $matchDetails += "Suspicious Args Match: $($suspiciousArgMatches -join ', ')"
             }
-
+    
             $ipMatches = Check-IP -string $reg.ExecuteArgs
             if ($ipMatches.Count -gt 0) {
                 $matchDetails += "Matched IP Address: $($ipMatches -join ', ')"
             }
-
+    
             $domainMatch = Check-TLD -string $reg.ExecuteArgs
             if ($null -ne $domainMatch) {
                 $matchDetails += "Matched Domain: $domainMatch"
             }
-
+    
             if ($reg.Path -eq "HKLM:\System\CurrentControlSet\Control\Session Manager" -and $reg.KeyName -eq "BootExecute") {
                 if ($reg.KeyValue -notlike "autocheck autochk *") {
                     $matchDetails += "Malicious BootExecute Modification"
                 }
             }
-
+    
             if ($matchDetails.Count -gt 0) {
                 $filteredReg = $reg.PSObject.Copy()
                 $filteredReg.Flags = ($matchDetails -join "; ")
-                $regObjectsFiltered += $filteredReg}
-
-            # Filter False Positives
-            $regObjectsFiltered = $regObjectsFiltered | Where-Object{
-                !(
-                    ($_.Path -like "*\Software\Microsoft\Windows\CurrentVersion\Run" -and $_.KeyValue -like "*\AppData\Local\Microsoft\OneDrive\OneDrive.exe*" -and $_.ExecuteFile -like "*\AppData\Local\Microsoft\OneDrive\OneDrive.exe")
-                )
+                $regObjectsFiltered += ,$filteredReg  # <--- This comma guarantees it's treated as an array
             }
         }
+    
+        # ✅ Now do the post-filtering here
+        $regObjectsFiltered = $regObjectsFiltered | Where-Object {
+            !(
+                ($_.Path -like "*\Software\Microsoft\Windows\CurrentVersion\Run" -and $_.KeyValue -like "*\AppData\Local\Microsoft\OneDrive\OneDrive.exe*" -and $_.ExecuteFile -like "*\AppData\Local\Microsoft\OneDrive\OneDrive.exe")
+            )
+        }
+    
         return $regObjectsFiltered
-    }
+    }    
     else {
         # Return all, but only include Shell Folder startup paths if relevant, and only include Session Manager key if relevant
         $filteredRegObjects = @()
