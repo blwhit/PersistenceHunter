@@ -52,7 +52,6 @@ $global:susFilepathStrings = @(
     "\Temp\SomeMFT", # MFT analysis or malicious data
     "C:\evtx_compromised_machine", # Malicious event log directory
     "\Prefetch\[Tool name].exe-RANDOM.pf", # Prefetch file for malicious tools
-    "sc.exe", # Service control executable (often misused for persistence)
     "\AppData\",
     "\AppData\Roaming\",
     "\AppData\Local\Temp\",
@@ -104,13 +103,11 @@ $global:suspiciousArgStrings = @(
     "/sc onstart", # Startup-based execution [from article]
     "/tn", # Task name argument for scheduled tasks [from article]
     "/tr", # Task run argument for scheduled tasks [from article]
-    "/st", # Task start time for scheduled tasks [from article]
     "/ru", # Task run as user [from article]
     "/rp", # Task run with password [from article]
     "/vbr", # Task parameters for scheduled tasks [from article]
     "reg add", # Adding registry entries for persistence [from article]
     "reg delete", # Deleting registry entries [from article]
-    "/v", # Registry value argument [from article]
     "/t REG_SZ", # Registry type argument [from article]
     "/t REG_DWORD", # Registry type argument [from article]
     "HKLM\Software\Microsoft\Windows\CurrentVersion\Run", # Registry key for autostart [from article]
