@@ -290,123 +290,97 @@ function Check-AdminPrivilege {
     }
 }
 
-function Write-CSV {
+
+function Write-Csv {
     param (
-        [Parameter(Mandatory=$true)]
-        [string]$csvPath,
-        
-        [Parameter(Mandatory=$true)]
-        [array]$outputReport
+        [Parameter(Mandatory = $true)]
+        [string]$OutputPath,
+
+        [Parameter(Mandatory = $true)]
+        [array]$Results
     )
 
-    # Set default CSV path if not provided
-    if (-not $csvPath -or [string]::IsNullOrEmpty($csvPath)) {
-        # Get the directory for the CSV export path
-        $currentDirectory = Get-Location
-        # Get the current date in a formatted way
-        $date = Get-Date -Format "MM-dd-yyyy_HH-mm-ss"
-        $csvPath = "$currentDirectory\PersistenceReport-$date.csv"
+    if ($Results.Count -eq 0) {
+        Write-Host "[!] No results to write to CSV."
+        return
     }
 
-    # Prepare for CSV export
-    $isFirstExport = $true
+    # Define ordered columns grouped by context
+    $orderedProperties = @(
+        # General
+        'Category',
+        'Name',
+        'DisplayName',
+        'FileName',
+        'FullPath',
+        'FileType',
+        'FileSignature',
+        'Created',
+        'LastModified',
+        'UserProfile',
+        'User',
 
-    # Wrap ExecuteArgs or Arguments in quotes if necessary
-    foreach ($entry in $outputReport) {
-        if ($entry.PSObject.Properties['ExecuteArgs']) {
-            $entry.ExecuteArgs = "`"$($entry.ExecuteArgs)`""
-        }
-        elseif ($entry.PSObject.Properties['Arguments']) {
-            $entry.Arguments = "`"$($entry.Arguments)`""
-        }
+        # Services
+        'StartType',
+        'Status',
+        'ServiceType',
+        'RawPath',
+        'Service_ExecuteFile',
+        'Service_ExecuteArgs',
+        'Service_Signature',
+        'Service_MD5',
+        'Service_StartName',
+        'Service_Dependencies',
+        'Service_Description',
+        'Service_Flags',
+
+        # Registry
+        'Hive',
+        'Path',
+        'KeyName',
+        'KeyValue',
+        'ClassId',
+        'Data',
+        'CimClass',
+        'LoadAppInit_DLLs',
+        'RawDLLPath',
+        'DLLResolvedPath',
+        'Registry_ExecuteFile',
+        'Registry_ExecuteArgs',
+        'Registry_MD5',
+        'Registry_Flags',
+
+        # Scheduled Tasks
+        'TaskName',
+        'TaskPath',
+        'Enabled',
+        'NextRunTime',
+        'State',
+        'ActionType',
+        'Execute',
+        'ExecutePath',
+        'ExecuteSignature',
+        'ExecuteMD5',
+        'Arguments',
+        'WorkingDirectory',
+
+        # Startup Items
+        'StartupFolder',
+        'ShortcutTarget',
+        'ShortcutSignature',
+        'ShortcutMD5'
+    )
+
+    try {
+        $Results | Select-Object -Property $orderedProperties |
+            Export-Csv -Path $OutputPath -NoTypeInformation -Encoding UTF8
+        Write-Host "[*] Results written to: $OutputPath"
+    } catch {
+        Write-Error "[!] Failed to write CSV: $_"
     }
-
-    # Export report to CSV
-    foreach ($entry in $outputReport) {
-        $reportObject = New-Object PSObject -property @{
-            Category      = $entry.Category
-            Name          = $entry.Name
-            DisplayName   = $entry.DisplayName
-            StartType     = $entry.StartType
-            Status        = $entry.Status
-            ServiceType   = $entry.ServiceType
-            RawPath       = $entry.RawPath
-            Service_ExecuteFile   = $entry.ExecuteFile
-            Service_ExecuteArgs   = $entry.ExecuteArgs
-            Service_Signature     = $entry.Signature
-            Service_MD5           = $entry.MD5
-            Service_StartName     = $entry.StartName
-            Service_Dependencies  = $entry.Dependencies
-            Service_Description   = $entry.Description
-            Service_Flags         = $entry.Flags
-            LoadAppInit_DLLs      = $entry.LoadAppInit_DLLs
-            RawDLLPath            = $entry.RawDLLPath
-            DLLResolvedPath       = $entry.DLLResolvedPath
-            UserProfile           = $entry.UserProfile
-            FileName              = $entry.FileName
-            FullPath              = $entry.FullPath
-            StartupFolder         = $entry.StartupFolder
-            FileType              = $entry.FileType
-            ShortcutTarget        = $entry.ShortcutTarget
-            ShortcutSignature     = $entry.ShortcutSignature
-            ShortcutMD5           = $entry.ShortcutMD5
-            Created               = $entry.Created
-            LastModified          = $entry.LastModified
-            TaskName              = $entry.TaskName
-            TaskPath              = $entry.TaskPath
-            Enabled               = $entry.Enabled
-            NextRunTime           = $entry.NextRunTime
-            State                 = $entry.State
-            ActionType            = $entry.ActionType
-            Execute               = $entry.Execute
-            ExecutePath           = $entry.ExecutePath
-            ExecuteSignature      = $entry.ExecuteSignature
-            ExecuteMD5            = $entry.ExecuteMD5
-            Arguments             = $entry.Arguments
-            WorkingDirectory      = $entry.WorkingDirectory
-            ClassId               = $entry.ClassId
-            Data                  = $entry.Data
-            CimClass              = $entry.CimClass
-            Hive                  = $entry.Hive
-            Path                  = $entry.Path
-            User                  = $entry.User
-            KeyName               = $entry.KeyName
-            KeyValue              = $entry.KeyValue
-            FileSignature         = $entry.FileSignature
-            Registry_ExecuteFile  = $entry.ExecuteFile
-            Registry_MD5          = $entry.MD5
-            Registry_ExecuteArgs  = $entry.ExecuteArgs
-            Registry_Flags        = $entry.Flags
-        }
-
-        if ($isFirstExport) {
-            $reportObject | Export-Csv -Path $csvPath -NoTypeInformation
-            $isFirstExport = $false
-        }
-        else {
-            $reportObject | Export-Csv -Path $csvPath -NoTypeInformation -Append
-        }
-    }
-
-    # Read the CSV and modify column order
-    $csvData = Import-Csv -Path $csvPath
-    $headers = $csvData[0].PSObject.Properties.Name
-    # Ensure "Category" is first
-    $nonEmptyColumns = @("Category") + ($headers | Where-Object { $_ -ne 'Category' } | Sort-Object)
-
-    # Create sorted and cleaned data
-    $sortedCsvData = foreach ($row in $csvData) {
-        $obj = New-Object PSObject
-        foreach ($column in $nonEmptyColumns) {
-            $obj | Add-Member -MemberType NoteProperty -Name $column -Value $row.$column
-        }
-        $obj
-    }
-
-    # Export the modified CSV data back to file
-    $sortedCsvData | Export-Csv -Path $csvPath -NoTypeInformation
-    Write-Host "Exported to $csvPath with 'Category' as the first column" -ForegroundColor Green
 }
+
+
 
 function Output-Report {
     param (
@@ -1350,7 +1324,11 @@ function Hunt-Persistence {
         [string]$mode,
         [switch]$csv,
         [string[]]$strings,
-        [string]$csvPath)
+        [string]$csvPath = $(
+            $date = Get-Date -Format "yyyyMMdd-HHmmss"
+            Join-Path -Path $env:TEMP -ChildPath "PersistenceHunt-Report-$date.csv"
+        )
+    )
 
     Write-Host "`n[ PersistenceHunter.ps1 ]"
     Write-Host "[ https://github.com/blwhit/PersistenceHunter ]`n"
@@ -1409,7 +1387,7 @@ function Hunt-Persistence {
 
     # CSV Output
     if ($csv) {
-        Write-CSV -csvPath $csvPath -outputReport $outputReport
+        Write-CSV -OutputPath $csvPath -Results $outputReport
     }
 }
 
