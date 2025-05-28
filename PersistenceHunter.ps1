@@ -313,7 +313,7 @@ function Write-Csv {
         # Services
         'StartType','Status','ServiceType','RawPath','Service_ExecuteFile','Service_ExecuteArgs','Service_Signature','Service_MD5','Service_StartName','Service_Dependencies','Service_Description','Service_Flags',
 
-        # Registry
+        # Registry + AppInit-DLL
         'Hive','Path','KeyName','KeyValue','ClassId','Data','CimClass','LoadAppInit_DLLs','RawDLLPath','DLLResolvedPath','Registry_ExecuteFile','Registry_ExecuteArgs','Registry_MD5','Registry_Flags',
 
         # Scheduled Tasks
@@ -354,41 +354,41 @@ function Write-Csv {
             Service_Description    = if ($category -eq 'Service') { $entry.Description } else { $null }
             Service_Flags          = if ($category -eq 'Service') { $entry.Flags } else { $null }
 
-            # Registry
-            Hive                   = if ($category -eq 'Registry') { $entry.Hive } else { $null }
-            Path                   = if ($category -eq 'Registry') { $entry.Path } else { $null }
-            KeyName                = if ($category -eq 'Registry') { $entry.KeyName } else { $null }
-            KeyValue               = if ($category -eq 'Registry') { $entry.KeyValue } else { $null }
-            ClassId                = if ($category -eq 'Registry') { $entry.ClassId } else { $null }
-            Data                   = if ($category -eq 'Registry') { $entry.Data } else { $null }
-            CimClass               = if ($category -eq 'Registry') { $entry.CimClass } else { $null }
-            LoadAppInit_DLLs       = if ($category -eq 'Registry') { $entry.LoadAppInit_DLLs } else { $null }
-            RawDLLPath             = if ($category -eq 'Registry') { $entry.RawDLLPath } else { $null }
-            DLLResolvedPath        = if ($category -eq 'Registry') { $entry.DLLResolvedPath } else { $null }
-            Registry_ExecuteFile   = if ($category -eq 'Registry') { $entry.ExecuteFile } else { $null }
-            Registry_ExecuteArgs   = if ($category -eq 'Registry') { $entry.ExecuteArgs } else { $null }
-            Registry_MD5           = if ($category -eq 'Registry') { $entry.MD5 } else { $null }
-            Registry_Flags         = if ($category -eq 'Registry') { $entry.Flags } else { $null }
+            # Registry and AppInit-DLL (share fields)
+            Hive                   = if ($category -in @('Registry', 'AppInit-DLL')) { $entry.Hive } else { $null }
+            Path                   = if ($category -in @('Registry', 'AppInit-DLL')) { $entry.Path } else { $null }
+            KeyName                = if ($category -in @('Registry', 'AppInit-DLL')) { $entry.KeyName } else { $null }
+            KeyValue               = if ($category -in @('Registry', 'AppInit-DLL')) { $entry.KeyValue } else { $null }
+            ClassId                = if ($category -in @('Registry', 'AppInit-DLL')) { $entry.ClassId } else { $null }
+            Data                   = if ($category -in @('Registry', 'AppInit-DLL')) { $entry.Data } else { $null }
+            CimClass               = if ($category -in @('Registry', 'AppInit-DLL')) { $entry.CimClass } else { $null }
+            LoadAppInit_DLLs       = if ($category -in @('Registry', 'AppInit-DLL')) { $entry.LoadAppInit_DLLs } else { $null }
+            RawDLLPath             = if ($category -in @('Registry', 'AppInit-DLL')) { $entry.RawDLLPath } else { $null }
+            DLLResolvedPath        = if ($category -in @('Registry', 'AppInit-DLL')) { $entry.DLLResolvedPath } else { $null }
+            Registry_ExecuteFile   = if ($category -in @('Registry', 'AppInit-DLL')) { $entry.ExecuteFile } else { $null }
+            Registry_ExecuteArgs   = if ($category -in @('Registry', 'AppInit-DLL')) { $entry.ExecuteArgs } else { $null }
+            Registry_MD5           = if ($category -in @('Registry', 'AppInit-DLL')) { $entry.MD5 } else { $null }
+            Registry_Flags         = if ($category -in @('Registry', 'AppInit-DLL')) { $entry.Flags } else { $null }
 
             # Scheduled Tasks
-            TaskName               = if ($category -eq 'Task') { $entry.TaskName } else { $null }
-            TaskPath               = if ($category -eq 'Task') { $entry.TaskPath } else { $null }
-            Enabled                = if ($category -eq 'Task') { $entry.Enabled } else { $null }
-            NextRunTime            = if ($category -eq 'Task') { $entry.NextRunTime } else { $null }
-            State                  = if ($category -eq 'Task') { $entry.State } else { $null }
-            ActionType             = if ($category -eq 'Task') { $entry.ActionType } else { $null }
-            Execute                = if ($category -eq 'Task') { $entry.Execute } else { $null }
-            ExecutePath            = if ($category -eq 'Task') { $entry.ExecutePath } else { $null }
-            ExecuteSignature       = if ($category -eq 'Task') { $entry.ExecuteSignature } else { $null }
-            ExecuteMD5             = if ($category -eq 'Task') { $entry.ExecuteMD5 } else { $null }
-            Arguments              = if ($category -eq 'Task') { $entry.Arguments } else { $null }
-            WorkingDirectory       = if ($category -eq 'Task') { $entry.WorkingDirectory } else { $null }
+            TaskName               = if ($category -eq 'Scheduled-Task') { $entry.TaskName } else { $null }
+            TaskPath               = if ($category -eq 'Scheduled-Task') { $entry.TaskPath } else { $null }
+            Enabled                = if ($category -eq 'Scheduled-Task') { $entry.Enabled } else { $null }
+            NextRunTime            = if ($category -eq 'Scheduled-Task') { $entry.NextRunTime } else { $null }
+            State                  = if ($category -eq 'Scheduled-Task') { $entry.State } else { $null }
+            ActionType             = if ($category -eq 'Scheduled-Task') { $entry.ActionType } else { $null }
+            Execute                = if ($category -eq 'Scheduled-Task') { $entry.Execute } else { $null }
+            ExecutePath            = if ($category -eq 'Scheduled-Task') { $entry.ExecutePath } else { $null }
+            ExecuteSignature       = if ($category -eq 'Scheduled-Task') { $entry.ExecuteSignature } else { $null }
+            ExecuteMD5             = if ($category -eq 'Scheduled-Task') { $entry.ExecuteMD5 } else { $null }
+            Arguments              = if ($category -eq 'Scheduled-Task') { $entry.Arguments } else { $null }
+            WorkingDirectory       = if ($category -eq 'Scheduled-Task') { $entry.WorkingDirectory } else { $null }
 
             # Startup Items
-            StartupFolder          = if ($category -eq 'Startup') { $entry.StartupFolder } else { $null }
-            ShortcutTarget         = if ($category -eq 'Startup') { $entry.ShortcutTarget } else { $null }
-            ShortcutSignature      = if ($category -eq 'Startup') { $entry.ShortcutSignature } else { $null }
-            ShortcutMD5            = if ($category -eq 'Startup') { $entry.ShortcutMD5 } else { $null }
+            StartupFolder          = if ($category -eq 'Startup-Folder') { $entry.StartupFolder } else { $null }
+            ShortcutTarget         = if ($category -eq 'Startup-Folder') { $entry.ShortcutTarget } else { $null }
+            ShortcutSignature      = if ($category -eq 'Startup-Folder') { $entry.ShortcutSignature } else { $null }
+            ShortcutMD5            = if ($category -eq 'Startup-Folder') { $entry.ShortcutMD5 } else { $null }
         }
     }
 
@@ -400,7 +400,6 @@ function Write-Csv {
         Write-Error "[!] Failed to write CSV: $_"
     }
 }
-
 
 
 
