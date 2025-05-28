@@ -84,7 +84,8 @@ $global:susFilepathStrings = @(
     "svch0st", # Zero instead of 'o'
     "wind0ws", # Zero instead of 'o'
     "AppInit_DLLs",
-    "LoadAppInit_DLLs"
+    "LoadAppInit_DLLs",
+	"client32.exe" #NetSupport RAT
 )
 
 $global:suspiciousArgStrings = @(
@@ -305,80 +306,102 @@ function Write-Csv {
         return
     }
 
-    # Define ordered columns grouped by context
     $orderedProperties = @(
         # General
-        'Category',
-        'Name',
-        'DisplayName',
-        'FileName',
-        'FullPath',
-        'FileType',
-        'FileSignature',
-        'Created',
-        'LastModified',
-        'UserProfile',
-        'User',
+        'Category','Name','DisplayName','FileName','FullPath','FileType','FileSignature','Created','LastModified','UserProfile','User',
 
         # Services
-        'StartType',
-        'Status',
-        'ServiceType',
-        'RawPath',
-        'Service_ExecuteFile',
-        'Service_ExecuteArgs',
-        'Service_Signature',
-        'Service_MD5',
-        'Service_StartName',
-        'Service_Dependencies',
-        'Service_Description',
-        'Service_Flags',
+        'StartType','Status','ServiceType','RawPath','Service_ExecuteFile','Service_ExecuteArgs','Service_Signature','Service_MD5','Service_StartName','Service_Dependencies','Service_Description','Service_Flags',
 
         # Registry
-        'Hive',
-        'Path',
-        'KeyName',
-        'KeyValue',
-        'ClassId',
-        'Data',
-        'CimClass',
-        'LoadAppInit_DLLs',
-        'RawDLLPath',
-        'DLLResolvedPath',
-        'Registry_ExecuteFile',
-        'Registry_ExecuteArgs',
-        'Registry_MD5',
-        'Registry_Flags',
+        'Hive','Path','KeyName','KeyValue','ClassId','Data','CimClass','LoadAppInit_DLLs','RawDLLPath','DLLResolvedPath','Registry_ExecuteFile','Registry_ExecuteArgs','Registry_MD5','Registry_Flags',
 
         # Scheduled Tasks
-        'TaskName',
-        'TaskPath',
-        'Enabled',
-        'NextRunTime',
-        'State',
-        'ActionType',
-        'Execute',
-        'ExecutePath',
-        'ExecuteSignature',
-        'ExecuteMD5',
-        'Arguments',
-        'WorkingDirectory',
+        'TaskName','TaskPath','Enabled','NextRunTime','State','ActionType','Execute','ExecutePath','ExecuteSignature','ExecuteMD5','Arguments','WorkingDirectory',
 
         # Startup Items
-        'StartupFolder',
-        'ShortcutTarget',
-        'ShortcutSignature',
-        'ShortcutMD5'
+        'StartupFolder','ShortcutTarget','ShortcutSignature','ShortcutMD5'
     )
 
+    $mappedResults = foreach ($entry in $Results) {
+        $category = $entry.Category
+
+        [pscustomobject]@{
+            # General
+            Category               = $category
+            Name                   = $entry.Name
+            DisplayName            = $entry.DisplayName
+            FileName               = $entry.FileName
+            FullPath               = $entry.FullPath
+            FileType               = $entry.FileType
+            FileSignature          = $entry.FileSignature
+            Created                = $entry.Created
+            LastModified           = $entry.LastModified
+            UserProfile            = $entry.UserProfile
+            User                   = $entry.User
+
+            # Services
+            StartType              = if ($category -eq 'Service') { $entry.StartType } else { $null }
+            Status                 = if ($category -eq 'Service') { $entry.Status } else { $null }
+            ServiceType            = if ($category -eq 'Service') { $entry.ServiceType } else { $null }
+            RawPath                = if ($category -eq 'Service') { $entry.RawPath } else { $null }
+            Service_ExecuteFile    = if ($category -eq 'Service') { $entry.ExecuteFile } else { $null }
+            Service_ExecuteArgs    = if ($category -eq 'Service') { $entry.ExecuteArgs } else { $null }
+            Service_Signature      = if ($category -eq 'Service') { $entry.Signature } else { $null }
+            Service_MD5            = if ($category -eq 'Service') { $entry.MD5 } else { $null }
+            Service_StartName      = if ($category -eq 'Service') { $entry.StartName } else { $null }
+            Service_Dependencies   = if ($category -eq 'Service') { $entry.Dependencies } else { $null }
+            Service_Description    = if ($category -eq 'Service') { $entry.Description } else { $null }
+            Service_Flags          = if ($category -eq 'Service') { $entry.Flags } else { $null }
+
+            # Registry
+            Hive                   = if ($category -eq 'Registry') { $entry.Hive } else { $null }
+            Path                   = if ($category -eq 'Registry') { $entry.Path } else { $null }
+            KeyName                = if ($category -eq 'Registry') { $entry.KeyName } else { $null }
+            KeyValue               = if ($category -eq 'Registry') { $entry.KeyValue } else { $null }
+            ClassId                = if ($category -eq 'Registry') { $entry.ClassId } else { $null }
+            Data                   = if ($category -eq 'Registry') { $entry.Data } else { $null }
+            CimClass               = if ($category -eq 'Registry') { $entry.CimClass } else { $null }
+            LoadAppInit_DLLs       = if ($category -eq 'Registry') { $entry.LoadAppInit_DLLs } else { $null }
+            RawDLLPath             = if ($category -eq 'Registry') { $entry.RawDLLPath } else { $null }
+            DLLResolvedPath        = if ($category -eq 'Registry') { $entry.DLLResolvedPath } else { $null }
+            Registry_ExecuteFile   = if ($category -eq 'Registry') { $entry.ExecuteFile } else { $null }
+            Registry_ExecuteArgs   = if ($category -eq 'Registry') { $entry.ExecuteArgs } else { $null }
+            Registry_MD5           = if ($category -eq 'Registry') { $entry.MD5 } else { $null }
+            Registry_Flags         = if ($category -eq 'Registry') { $entry.Flags } else { $null }
+
+            # Scheduled Tasks
+            TaskName               = if ($category -eq 'Task') { $entry.TaskName } else { $null }
+            TaskPath               = if ($category -eq 'Task') { $entry.TaskPath } else { $null }
+            Enabled                = if ($category -eq 'Task') { $entry.Enabled } else { $null }
+            NextRunTime            = if ($category -eq 'Task') { $entry.NextRunTime } else { $null }
+            State                  = if ($category -eq 'Task') { $entry.State } else { $null }
+            ActionType             = if ($category -eq 'Task') { $entry.ActionType } else { $null }
+            Execute                = if ($category -eq 'Task') { $entry.Execute } else { $null }
+            ExecutePath            = if ($category -eq 'Task') { $entry.ExecutePath } else { $null }
+            ExecuteSignature       = if ($category -eq 'Task') { $entry.ExecuteSignature } else { $null }
+            ExecuteMD5             = if ($category -eq 'Task') { $entry.ExecuteMD5 } else { $null }
+            Arguments              = if ($category -eq 'Task') { $entry.Arguments } else { $null }
+            WorkingDirectory       = if ($category -eq 'Task') { $entry.WorkingDirectory } else { $null }
+
+            # Startup Items
+            StartupFolder          = if ($category -eq 'Startup') { $entry.StartupFolder } else { $null }
+            ShortcutTarget         = if ($category -eq 'Startup') { $entry.ShortcutTarget } else { $null }
+            ShortcutSignature      = if ($category -eq 'Startup') { $entry.ShortcutSignature } else { $null }
+            ShortcutMD5            = if ($category -eq 'Startup') { $entry.ShortcutMD5 } else { $null }
+        }
+    }
+
     try {
-        $Results | Select-Object -Property $orderedProperties |
+        $mappedResults | Select-Object -Property $orderedProperties |
             Export-Csv -Path $OutputPath -NoTypeInformation -Encoding UTF8
         Write-Host "[*] Results written to: $OutputPath"
     } catch {
         Write-Error "[!] Failed to write CSV: $_"
     }
 }
+
+
 
 
 
@@ -748,7 +771,7 @@ function Get-Registry {
             }
         }
     
-        # ✅ Now do the post-filtering here
+        # Now do the post-filtering here
         $regObjectsFiltered = $regObjectsFiltered | Where-Object {
             !(
                 ($_.Path -like "*\Software\Microsoft\Windows\CurrentVersion\Run" -and $_.KeyValue -like "*\AppData\Local\Microsoft\OneDrive\OneDrive.exe*" -and $_.ExecuteFile -like "*\AppData\Local\Microsoft\OneDrive\OneDrive.exe") -or
