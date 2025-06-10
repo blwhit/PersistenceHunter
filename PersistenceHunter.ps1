@@ -977,16 +977,15 @@ function Get-Startups {
 
     $startupObjects = @()
 
-    # Get all user profile folders from C:\Users\
-    $userProfiles = Get-ChildItem "C:\Users" -Directory | Where-Object {
-        $_.Name -notin @("Default", "Default User", "Public", "All Users")
-    }
+    # Get all valid user profile folders
+    $userProfiles = @(Get-ChildItem "C:\Users" -Directory | Where-Object {
+    $_.Name -notin @("Default", "Default User", "Public", "All Users")})
 
-    # Include current user profile path if not already present
+    # Ensure it's an array, then add current user profile if missing
     $currentUserProfile = $env:USERPROFILE
     if (-not ($userProfiles.FullName -contains $currentUserProfile)) {
-        $userProfiles += Get-Item -Path $currentUserProfile
-    }
+        $userProfiles += ,(Get-Item -Path $currentUserProfile)}
+
 
     # Add user Startup folder entries
     foreach ($profile in $userProfiles) {
