@@ -968,15 +968,12 @@ function Get-Tasks {
 # ################################################################################################################################################################################################################
 
 # STARTUP FOLDERS #
-function Get-Startups{
+function Get-Startups {
     [CmdletBinding()]
     param (
-    [Parameter()]
-    [string]
-    $mode)
-
-    
-
+        [Parameter()]
+        [string]$mode
+    )
 
     $startupObjects = @()
 
@@ -985,17 +982,15 @@ function Get-Startups{
         $_.Name -notin @("Default", "Default User", "Public", "All Users")
     }
 
-    # Include current user profile path (if for some reason not listed above)
+    # Include current user profile path if not already present
     $currentUserProfile = $env:USERPROFILE
     if (-not ($userProfiles.FullName -contains $currentUserProfile)) {
-        $userProfiles += Get-Item $currentUserProfile
+        $userProfiles += Get-Item -Path $currentUserProfile
     }
 
-
-    # Add all user profile Startup paths
+    # Add user Startup folder entries
     foreach ($profile in $userProfiles) {
         $userStartup = Join-Path -Path $profile.FullName -ChildPath "AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup"
-        
         if (Test-Path $userStartup -ErrorAction SilentlyContinue) {
             $files = Get-ChildItem -Path $userStartup -File -Force -ErrorAction SilentlyContinue
             foreach ($file in $files) {
@@ -1026,26 +1021,26 @@ function Get-Startups{
                 $fileHash = Get-MD5Hash $file.FullName
 
                 $startupObjects += [PSCustomObject]@{
-                    Category            = "Startup-Folder"
-                    UserProfile         = $profile.Name
-                    FileName            = $file.Name
-                    FullPath            = $file.FullName
-                    Signature           = $signature
-                    MD5                 = $fileHash
-                    StartupFolder       = $userStartup
-                    ItemType            = $itemType
-                    ShortcutTarget      = $shortcutTarget
-                    ShortcutSignature   = $shortcutSignature
-                    ShortcutMD5         = $shortcutHash
-                    Created             = $file.CreationTime
-                    LastModified        = $file.LastWriteTime
-                    Flags               = ""
+                    Category           = "Startup-Folder"
+                    UserProfile        = $profile.Name
+                    FileName           = $file.Name
+                    FullPath           = $file.FullName
+                    Signature          = $signature
+                    MD5                = $fileHash
+                    StartupFolder      = $userStartup
+                    ItemType           = $itemType
+                    ShortcutTarget     = $shortcutTarget
+                    ShortcutSignature  = $shortcutSignature
+                    ShortcutMD5        = $shortcutHash
+                    Created            = $file.CreationTime
+                    LastModified       = $file.LastWriteTime
+                    Flags              = ""
                 }
             }
         }
     }
 
-    # Also check the All Users startup folder
+    # Check All Users Startup
     $allUsersStartup = "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Startup"
     if (Test-Path $allUsersStartup -ErrorAction SilentlyContinue) {
         $files = Get-ChildItem -Path $allUsersStartup -File -Force -ErrorAction SilentlyContinue
@@ -1077,31 +1072,31 @@ function Get-Startups{
             $fileHash = Get-MD5Hash $file.FullName
 
             $startupObjects += [PSCustomObject]@{
-                Category            = "Startup-Folder"
-                UserProfile         = "All Users"
-                FileName            = $file.Name
-                FullPath            = $file.FullName
-                Signature           = $signature
-                MD5                 = $fileHash
-                StartupFolder       = $allUsersStartup
-                FileType            = $itemType
-                ShortcutTarget      = $shortcutTarget
-                ShortcutSignature   = $shortcutSignature
-                ShortcutMD5         = $shortcutHash
-                Created             = $file.CreationTime
-                LastModified        = $file.LastWriteTime
-                Flags               = ""
+                Category           = "Startup-Folder"
+                UserProfile        = "All Users"
+                FileName           = $file.Name
+                FullPath           = $file.FullName
+                Signature          = $signature
+                MD5                = $fileHash
+                StartupFolder      = $allUsersStartup
+                FileType           = $itemType
+                ShortcutTarget     = $shortcutTarget
+                ShortcutSignature  = $shortcutSignature
+                ShortcutMD5        = $shortcutHash
+                Created            = $file.CreationTime
+                LastModified       = $file.LastWriteTime
+                Flags              = ""
             }
         }
     }
-    # Filter
+
+    # Auto filter mode
     if ($mode -like "auto") {
         $startupFiltered = @()
 
         foreach ($item in $startupObjects) {
             $matchDetails = @()
 
-            # Check for invalid or unresolved signature/hash
             if (
                 ($item.Signature -ne "Valid" -and -not [string]::IsNullOrWhiteSpace($item.Signature)) -or
                 ($item.ShortcutSignature -ne "Valid" -and -not [string]::IsNullOrWhiteSpace($item.ShortcutSignature))
@@ -1109,13 +1104,11 @@ function Get-Startups{
                 $matchDetails += "Signature Invalid"
             }
 
-            # Check for suspicious file types (same as before)
             $suspiciousTypePattern = '\.(exe|dll|com|bat|cmd|msi|scr|pif|cpl|sys|drv|ocx|msc|vbs|vbe|js|jse|wsf|wsh|ps1|psm1|psd1|hta|reg|zip|rar|7z|cab|iso|img|jar|apk|app|sh|bin|run|pl|py|rb|lnk|scf|xll|gadget)$'
             if ($item.FileName -match $suspiciousTypePattern) {
                 $matchDetails += "Suspicious Startup File Type"
             }
 
-            # Suspicious File Path Check for FileName, FullPath, and ShortcutTarget
             $suspiciousFilePathMatchesFileName = Check-Suspicious-Strings -string $item.FileName -list $global:susFilepathStrings
             $suspiciousFilePathMatchesFullPath = Check-Suspicious-Strings -string $item.FullPath -list $global:susFilepathStrings
             $suspiciousFilePathMatchesShortcutTarget = Check-Suspicious-Strings -string $item.ShortcutTarget -list $global:susFilepathStrings
@@ -1130,13 +1123,11 @@ function Get-Startups{
                 $matchDetails += "Suspicious TargetPath Match: $($suspiciousFilePathMatchesShortcutTarget -join ', ')"
             }
 
-            # Suspicious Arguments Check (same as before)
             $suspiciousArgMatches = Check-Suspicious-Strings -string $item.ShortcutTarget -list $global:suspiciousArgStrings
             if ($suspiciousArgMatches.Count -gt 0) {
                 $matchDetails += "Suspicious Args Match: $($suspiciousArgMatches -join ', ')"
             }
 
-            # If anything was flagged, add to filtered list
             if ($matchDetails.Count -gt 0) {
                 $flaggedItem = $item.PSObject.Copy()
                 $flaggedItem.Flags = ($matchDetails -join "; ")
@@ -1144,7 +1135,6 @@ function Get-Startups{
             }
         }
 
-        # Filter false positives (adjust based on your logic)
         $startupFiltered = $startupFiltered | Where-Object {
             !(
                 ($_.Category -like "Startup-Folder" -and $_.FileName -like "Send to OneNote.lnk" -and $_.FullPath -like "*\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\Send to OneNote.lnk" -and $_.ShortcutTarget -like "*Program Files\Microsoft Office\root\Office16\ONENOTEM.EXE") -or
@@ -1157,8 +1147,8 @@ function Get-Startups{
     else {
         return $startupObjects
     }
-
 }
+
 
 # ################################################################################################################################################################################################################
 
