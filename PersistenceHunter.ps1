@@ -1280,20 +1280,20 @@ function Get-AppInitDLLs {
             $loadDlls = Get-ItemProperty -Path $path -Name "LoadAppInit_DLLs" -ErrorAction SilentlyContinue
             $dllListRaw = Get-ItemProperty -Path $path -Name "AppInit_DLLs" -ErrorAction SilentlyContinue
 
-            $loadValue = if ($loadDlls.LoadAppInit_DLLs -eq 1) { $true } else { $false }
+            $loadValue = ($loadDlls.LoadAppInit_DLLs -eq 1)
             $dllsRaw = $dllListRaw.AppInit_DLLs
 
-            # If LoadAppInit_DLLs is enabled and there's actual content
             if ($loadValue -and -not [string]::IsNullOrWhiteSpace($dllsRaw)) {
-                # Split multiple DLLs if separated by whitespace
-                $dllPaths = $dllsRaw -split '\s+'
+                # Split by semicolon or whitespace
+                $dllPaths = $dllsRaw -split '[;\s]+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
 
                 foreach ($dll in $dllPaths) {
-                    $dllPathResolved = [Environment]::ExpandEnvironmentVariables($dll.Trim('"'))
+                    $dllTrimmed = $dll.Trim('"')
+                    $dllPathResolved = [Environment]::ExpandEnvironmentVariables($dllTrimmed)
 
                     $signature = ""
                     $md5 = ""
-                    if (Test-Path $dllPathResolved -PathType Leaf -ErrorAction SilentlyContinue) {
+                    if (Test-Path $dllPathResolved -PathType Leaf) {
                         $signature = Get-SignatureStatus -filePath $dllPathResolved
                         $md5 = Get-MD5Hash -filePath $dllPathResolved
                     }
@@ -1317,6 +1317,7 @@ function Get-AppInitDLLs {
 
     return $results
 }
+
 
 
 
