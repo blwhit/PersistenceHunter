@@ -1284,26 +1284,45 @@ function Get-AppInitDLLs {
             $dllsRaw = $dllListRaw.AppInit_DLLs
 
             if ($loadValue -and -not [string]::IsNullOrWhiteSpace($dllsRaw)) {
-                # Split by semicolon or whitespace
                 $dllPaths = $dllsRaw -split '[;\s]+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
 
                 foreach ($dll in $dllPaths) {
                     $dllTrimmed = $dll.Trim('"')
-                    $dllPathResolved = [Environment]::ExpandEnvironmentVariables($dllTrimmed)
+                    $dllExpanded = [Environment]::ExpandEnvironmentVariables($dllTrimmed)
+                    $dllResolved = $null
+                    $resolvedFrom = ""
+
+                    if (Test-Path $dllExpanded -PathType Leaf) {
+                        $dllResolved = $dllExpanded
+                        $resolvedFrom = "ExpandedPath"
+                    }
+                    elseif (Test-Path "C:\Windows\System32\$dllTrimmed" -PathType Leaf) {
+                        $dllResolved = "C:\Windows\System32\$dllTrimmed"
+                        $resolvedFrom = "System32"
+                    }
+                    elseif (Test-Path "C:\Windows\SysWOW64\$dllTrimmed" -PathType Leaf) {
+                        $dllResolved = "C:\Windows\SysWOW64\$dllTrimmed"
+                        $resolvedFrom = "SysWOW64"
+                    }
+                    else {
+                        $dllResolved = $dllExpanded  # Keep original for reference
+                        $resolvedFrom = "Not Found"
+                    }
 
                     $signature = ""
                     $md5 = ""
-                    if (Test-Path $dllPathResolved -PathType Leaf) {
-                        $signature = Get-SignatureStatus -filePath $dllPathResolved
-                        $md5 = Get-MD5Hash -filePath $dllPathResolved
+                    if (Test-Path $dllResolved -PathType Leaf) {
+                        $signature = Get-SignatureStatus -filePath $dllResolved
+                        $md5 = Get-MD5Hash -filePath $dllResolved
                     }
 
                     $results += [PSCustomObject]@{
                         Category         = "AppInit-DLL"
                         RegistryPath     = $path
                         LoadAppInit_DLLs = $loadValue
-                        RawDLLPath       = $dll
-                        DLLResolvedPath  = $dllPathResolved
+                        RawDLLPath       = $dllTrimmed
+                        DLLResolvedPath  = $dllResolved
+                        ResolvedFrom     = $resolvedFrom
                         Signature        = $signature
                         MD5              = $md5
                         Flags            = "AppInitDLL Registered and Loaded"
@@ -1317,6 +1336,7 @@ function Get-AppInitDLLs {
 
     return $results
 }
+
 
 
 
