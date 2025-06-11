@@ -1280,40 +1280,84 @@ function Get-AppInitDLLs {
             $loadDlls = Get-ItemProperty -Path $path -Name "LoadAppInit_DLLs" -ErrorAction SilentlyContinue
             $dllListRaw = Get-ItemProperty -Path $path -Name "AppInit_DLLs" -ErrorAction SilentlyContinue
 
-            $loadValue = ($loadDlls.LoadAppInit_DLLs -eq 1)
+            $loadValue = $loadDlls.LoadAppInit_DLLs -eq 1
             $dllsRaw = $dllListRaw.AppInit_DLLs
 
             if ($loadValue -and -not [string]::IsNullOrWhiteSpace($dllsRaw)) {
-                $dllPaths = $dllsRaw -split '[;\s]+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+                $dllPaths = $dllsRaw -split '\s+'
 
                 foreach ($dll in $dllPaths) {
                     $dllTrimmed = $dll.Trim('"')
                     $dllExpanded = [Environment]::ExpandEnvironmentVariables($dllTrimmed)
+
                     $dllResolved = $null
-                    $resolvedFrom = ""
-
-                    if (Test-Path $dllExpanded -PathType Leaf) {
-                        $dllResolved = $dllExpanded
-                        $resolvedFrom = "ExpandedPath"
-                    }
-                    elseif (Test-Path "C:\Windows\System32\$dllTrimmed" -PathType Leaf) {
-                        $dllResolved = "C:\Windows\System32\$dllTrimmed"
-                        $resolvedFrom = "System32"
-                    }
-                    elseif (Test-Path "C:\Windows\SysWOW64\$dllTrimmed" -PathType Leaf) {
-                        $dllResolved = "C:\Windows\SysWOW64\$dllTrimmed"
-                        $resolvedFrom = "SysWOW64"
-                    }
-                    else {
-                        $dllResolved = $dllExpanded  # Keep original for reference
-                        $resolvedFrom = "Not Found"
-                    }
-
+                    $resolvedFrom = "Not Found"
+                    $md5 = "NotFound"
                     $signature = ""
-                    $md5 = ""
-                    if (Test-Path $dllResolved -PathType Leaf) {
-                        $signature = Get-SignatureStatus -filePath $dllResolved
-                        $md5 = Get-MD5Hash -filePath $dllResolved
+
+                    # Attempt direct resolution if full path
+                    if ($dllExpanded -like "*\*") {
+                        if (Test-Path $dllExpanded -PathType Leaf) {
+                            $dllResolved = (Get-Item -LiteralPath $dllExpanded).FullName
+                            $resolvedFrom = "Expanded Path"
+                            $md5 = Get-MD5Hash -filePath $dllResolved
+                            $signature = Get-SignatureStatus -filePath $dllResolved
+                        }
+                    } else {
+                        # Attempt fallback from known paths
+                        $searchPaths = @(
+                            "$env:windir\System32",
+                            "$env:windir\SysWOW64",
+                            "$env:windir"
+                        )
+
+                        foreach ($basePath in $searchPaths) {
+                            $candidate = Join-Path $basePath $dllExpanded
+                            if (Test-Path $candidate -PathType Leaf) {
+                                $dllResolved = (Get-Item -LiteralPath $candidate).FullName
+                                $resolvedFrom = "Fallback: $basePath"
+                                $md5 = Get-MD5Hash -filePath $dllResolved
+                                $signature = Get-SignatureStatus -filePath $dllResolved
+                                break
+                            }
+                        }
+                    }
+
+                    # If still unresolved, search whole drive
+                    if (-not $dllResolved -and -not [string]::IsNullOrWhiteSpace($dllExpanded)) {
+                        try {
+                            $matches = Get-ChildItem -Path "C:\" -Recurse -Filter $dllExpanded -File -ErrorAction SilentlyContinue -Force
+                            if ($matches.Count -eq 1) {
+                                $dllResolved = $matches[0].FullName
+                                $resolvedFrom = "Discovered: Full Search"
+                                $md5 = Get-MD5Hash -filePath $dllResolved
+                                $signature = Get-SignatureStatus -filePath $dllResolved
+                            }
+                            elseif ($matches.Count -gt 1) {
+                                # Collect hashes of all and compare
+                                $hashes = @()
+                                foreach ($file in $matches) {
+                                    try {
+                                        $hash = Get-MD5Hash -filePath $file.FullName
+                                        if ($hash -and $hash -ne "") {
+                                            $hashes += $hash
+                                        }
+                                    } catch {}
+                                }
+                                $uniqueHashes = $hashes | Select-Object -Unique
+                                if ($uniqueHashes.Count -eq 1) {
+                                    $md5 = $uniqueHashes[0]
+                                    $dllResolved = $matches[0].FullName
+                                    $resolvedFrom = "Discovered: Full Search (Unique)"
+                                    $signature = Get-SignatureStatus -filePath $dllResolved
+                                } else {
+                                    $md5 = "MultipleHashesFound"
+                                    $resolvedFrom = "Discovered: Full Search (Conflicted)"
+                                }
+                            }
+                        } catch {
+                            $resolvedFrom = "Search Failed"
+                        }
                     }
 
                     $results += [PSCustomObject]@{
@@ -1330,12 +1374,13 @@ function Get-AppInitDLLs {
                 }
             }
         } catch {
-            Write-Warning "Failed to query AppInit DLL settings from: $path"
+            Write-Warning "Failed to query AppInit DLLs from $path"
         }
     }
 
     return $results
 }
+
 
 
 
