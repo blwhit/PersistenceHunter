@@ -1,13 +1,11 @@
 # PersistenceHunter.ps1
 
-*UPDATED VERSION OF THIS TOOL RELEASED ---> *
-
-**PowerShell CLI tool for hunting Windows malware persistence mechanisms and suspicious autoruns.**
+### *UPDATED VERSION OF THIS TOOL RELEASED ---> *
 
 ---
 
 ### Overview
-This tool automatically finds potential malware footholds by analyzing the Registry, Services, Scheduled Tasks, and Startup Items for:
+PowerShell CLI tool for hunting Windows malware persistence mechanisms and suspicious autoruns. This tool automatically finds potential malware footholds by analyzing the Registry, Services, Scheduled Tasks, and Startup Items for:
 
 - Autoruns with invalid signatures
 - Suspicious file paths or references
