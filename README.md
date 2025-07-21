@@ -1,6 +1,6 @@
 # PersistenceHunter.ps1
 
-### *UPDATED VERSION OF THIS TOOL RELEASED ---> https://github.com/blwhit/AutorunHunter *
+### *UPDATED VERSION OF THIS TOOL RELEASED ---> https://github.com/blwhit/AutorunHunter <--- *
 
 ---
 
